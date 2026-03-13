@@ -1,21 +1,29 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import HomePage from './pages/HomePage'
-import AssessmentPage from './pages/AssessmentPage'
-import SkillsPage from './pages/SkillsPage'
-import DashboardPage from './pages/DashboardPage'
-import AuthPage from './pages/AuthPage'
+import { AuthContextProvider } from './context/AuthContext'
+import Home from './pages/Home'
+import Assessment from './pages/Assessment'
+import Skills from './pages/Skills'
+import Dashboard from './pages/Dashboard'
+import Login from './pages/Login'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/assessment" element={<AssessmentPage />} />
-        <Route path="/skills" element={<SkillsPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/login" element={<AuthPage />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthContextProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/assessment" element={<Assessment />} />
+          <Route path="/skills" element={<Skills />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/login" element={<Login />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthContextProvider>
   )
 }
 

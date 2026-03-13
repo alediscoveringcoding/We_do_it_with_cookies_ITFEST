@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import NavBar from '../shared/NavBar'
 import PageContainer from '../shared/PageContainer'
 
@@ -13,8 +14,8 @@ function HomePage() {
             assessment, clear matches, and real stories.
           </p>
           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
-            <button>Start Assessment</button>
-            <button>Browse Skills</button>
+            <Link to="/assessment" className="button">Start Assessment</Link>
+            <Link to="/skills" className="button">Browse Skills</Link>
           </div>
         </header>
 

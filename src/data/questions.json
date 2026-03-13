@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "text": "I enjoy building or fixing things with my hands.",
+    "trait": "R"
+  },
+  {
+    "id": 2,
+    "text": "I like working with tools and machinery.",
+    "trait": "R"
+  },
+  {
+    "id": 3,
+    "text": "I prefer working outdoors rather than in an office.",
+    "trait": "R"
+  },
+  {
+    "id": 4,
+    "text": "I enjoy solving complex problems and puzzles.",
+    "trait": "I"
+  },
+  {
+    "id": 5,
+    "text": "I like conducting scientific experiments.",
+    "trait": "I"
+  },
+  {
+    "id": 6,
+    "text": "I enjoy researching and analyzing information.",
+    "trait": "I"
+  },
+  {
+    "id": 7,
+    "text": "I enjoy solving complex problems and puzzles.",
+    "trait": "I"
+  },
+  {
+    "id": 8,
+    "text": "I like expressing myself through art, music, or writing.",
+    "trait": "A"
+  },
+  {
+    "id": 9,
+    "text": "I enjoy coming up with creative and original ideas.",
+    "trait": "A"
+  },
+  {
+    "id": 10,
+    "text": "I appreciate beauty and design in my surroundings.",
+    "trait": "A"
+  },
+  {
+    "id": 11,
+    "text": "I enjoy helping people with their problems.",
+    "trait": "S"
+  },
+  {
+    "id": 12,
+    "text": "I like teaching and mentoring others.",
+    "trait": "S"
+  },
+  {
+    "id": 13,
+    "text": "I prefer working in a team rather than alone.",
+    "trait": "S"
+  },
+  {
+    "id": 14,
+    "text": "I enjoy persuading and influencing others.",
+    "trait": "E"
+  },
+  {
+    "id": 15,
+    "text": "I like taking charge and leading projects.",
+    "trait": "E"
+  },
+  {
+    "id": 16,
+    "text": "I enjoy negotiating and making deals.",
+    "trait": "E"
+  },
+  {
+    "id": 17,
+    "text": "I like organizing and keeping detailed records.",
+    "trait": "C"
+  },
+  {
+    "id": 18,
+    "text": "I enjoy working with numbers and data.",
+    "trait": "C"
+  },
+  {
+    "id": 19,
+    "text": "I prefer following clear instructions and procedures.",
+    "trait": "C"
+  },
+  {
+    "id": 20,
+    "text": "I like maintaining order and accuracy in my work.",
+    "trait": "C"
+  }
+]
