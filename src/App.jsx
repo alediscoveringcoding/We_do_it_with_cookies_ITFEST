@@ -1,29 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { AuthContextProvider } from './context/AuthContext'
-import Home from './pages/Home'
-import Assessment from './pages/Assessment'
-import Skills from './pages/Skills'
-import Dashboard from './pages/Dashboard'
-import Login from './pages/Login'
-import ProtectedRoute from './components/ProtectedRoute'
-
 function App() {
+  console.log('App component is rendering')
   return (
-    <AuthContextProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/assessment" element={<Assessment />} />
-          <Route path="/skills" element={<Skills />} />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/login" element={<Login />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthContextProvider>
+    <div style={{ padding: '20px', backgroundColor: 'lightblue' }}>
+      <h1>PathFinder Application</h1>
+      <p>This is a test to see if React is working with basic styling.</p>
+    </div>
   )
 }
 

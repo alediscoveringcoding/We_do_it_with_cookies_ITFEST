@@ -2,7 +2,10 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import CTABanner from '../components/CTABanner'
 
+console.log('Home component is loading')
+
 export default function Home() {
+  console.log('Home component is rendering')
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
