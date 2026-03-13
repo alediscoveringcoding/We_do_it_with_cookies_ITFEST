@@ -1,10 +1,19 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Home from './pages/Home'
+import Assessment from './pages/Assessment'
+import Dashboard from './pages/Dashboard'
+import Login from './pages/Login'
+
 function App() {
-  console.log('App component is rendering')
   return (
-    <div style={{ padding: '20px', backgroundColor: 'lightblue' }}>
-      <h1>PathFinder Application</h1>
-      <p>This is a test to see if React is working with basic styling.</p>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/assessment" element={<Assessment />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    </Router>
   )
 }
 
