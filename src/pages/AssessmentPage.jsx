@@ -62,6 +62,8 @@ function AssessmentPage() {
   const [answers, setAnswers] = useState(new Array(20).fill(null))
   const [scores, setScores] = useState({})
   const [saving, setSaving] = useState(false)
+  const [answerError, setAnswerError] = useState('')
+  const [shake, setShake] = useState(false)
 
   async function saveAssessmentResults(finalScores, topTraits) {
     if (!user) {
@@ -170,14 +172,18 @@ function AssessmentPage() {
   }
 
   function selectOpt(i) {
+    setAnswerError('')
     const newAnswers = [...answers]
     newAnswers[currentQ] = i
     setAnswers(newAnswers)
   }
 
   function nextQ() {
-    if (answers[currentQ] === null) {
-      alert('Please select an answer!')
+    if (answers[currentQ] === null || answers[currentQ] === undefined) {
+      setAnswerError('Please select an answer before continuing')
+      setShake(true)
+      setTimeout(() => setShake(false), 500)
+      setTimeout(() => setAnswerError(''), 3000)
       return
     }
     if (currentQ < questions.length - 1) {
@@ -243,11 +249,47 @@ function AssessmentPage() {
         {/* QUIZ */}
         {phase === 'quiz' && (
           <div>
+            <style>{`
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-6px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                20% { transform: translateX(-6px); }
+                40% { transform: translateX(6px); }
+                60% { transform: translateX(-4px); }
+                80% { transform: translateX(4px); }
+              }
+            `}</style>
             <div className="q-progress-bar">
               <div className="q-progress-fill" style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}></div>
             </div>
             <div className="q-counter">Question {currentQ + 1} of {questions.length}</div>
             <div className="q-text">{questions[currentQ].text}</div>
+            {answerError && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                background: '#fef3c7',
+                border: '1.5px solid #f59e0b',
+                borderRadius: 12,
+                padding: '0.75rem 1rem',
+                marginBottom: '1rem',
+                animation: 'fadeIn 0.2s ease'
+              }}>
+                <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+                <span style={{
+                  color: '#92400e',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  fontFamily: 'DM Sans, sans-serif'
+                }}>
+                  {answerError}
+                </span>
+              </div>
+            )}
             <div className="q-options">
               {optionLabels.map((label, i) => (
                 <button
@@ -264,7 +306,7 @@ function AssessmentPage() {
               <button className="btn-secondary" onClick={prevQ} style={{ opacity: currentQ === 0 ? 0.4 : 1 }} disabled={currentQ === 0}>
                 ← Back
               </button>
-              <button className="btn-primary-teal" onClick={nextQ}>
+              <button className="btn-primary-teal" onClick={nextQ} style={{ animation: shake ? 'shake 0.4s ease' : 'none' }}>
                 {currentQ === questions.length - 1 ? 'See Results →' : 'Next →'}
               </button>
             </div>
