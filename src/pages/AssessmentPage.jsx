@@ -72,46 +72,80 @@ function AssessmentPage() {
     setSaving(true)
 
     try {
-      // Calculate top 3 traits
-      const topThreeTraits = Object.entries(finalScores)
+      // Step 1: Get top 3 traits from scores
+      const sortedTraits = Object.entries(finalScores)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
         .map(([key]) => key)
 
-      // Save assessment
+      console.log('Top traits:', sortedTraits)
+
+      // Step 2: Save assessment
       await supabase.from('assessments').insert({
         user_id: user.id,
         riasec_scores: finalScores,
-        top_traits: topThreeTraits
+        top_traits: sortedTraits
       })
 
-      // Fetch all universities
-      const { data: allUniversities } = await supabase
+      // Step 3: Fetch ALL 80 universities with their tags
+      const { data: allUnis, error: fetchError } = await supabase
         .from('universities')
         .select('id, riasec_tags')
 
-      // Filter matched
-      const matched = (allUniversities || []).filter(uni =>
-        Array.isArray(uni.riasec_tags) &&
-        uni.riasec_tags.some(tag => topThreeTraits.includes(tag))
+      if (fetchError || !allUnis) {
+        console.error('Fetch failed:', fetchError)
+        navigate('/my-matches')
+        return
+      }
+
+      // Step 4: Use IDENTICAL filter logic as DiscoverPage
+      // This guarantees same result as "Matched For You" on Discover
+      const matchedIds = allUnis
+        .filter(uni =>
+          Array.isArray(uni.riasec_tags) &&
+          uni.riasec_tags.some(tag => sortedTraits.includes(tag))
+        )
+        .map(uni => uni.id)
+
+      console.log('Matched IDs count:', matchedIds.length)
+      // This number must match what Discover shows (e.g. 68)
+
+      // Step 5: Insert ALL matched IDs via server-side RPC function
+      // This runs as a single SQL transaction — no timeouts, no partial inserts
+      const { error: rpcError } = await supabase.rpc(
+        'insert_university_matches',
+        {
+          p_user_id: user.id,
+          p_university_ids: matchedIds
+        }
       )
 
-      // Get just the IDs
-      const matchedIds = matched.map(u => u.id)
-
-      // Call the SQL function — inserts ALL at once server-side
-      const { error } = await supabase.rpc('insert_university_matches', {
-        p_user_id: user.id,
-        p_university_ids: matchedIds
-      })
-
-      if (error) console.error('RPC error:', error)
-      else console.log('Inserted', matchedIds.length, 'universities')
+      if (rpcError) {
+        console.error('RPC insert failed:', rpcError)
+        // Fallback: try direct upsert if RPC fails
+        const rows = matchedIds.map(id => ({
+          user_id: user.id,
+          university_id: id,
+          choice: 'yes',
+          source: 'auto_match',
+          final_decision: null
+        }))
+        const { error: upsertError } = await supabase
+          .from('user_university_choices')
+          .upsert(rows, { onConflict: 'user_id,university_id' })
+        if (upsertError) {
+          console.error('Upsert also failed:', upsertError)
+        } else {
+          console.log('Fallback upsert succeeded:', rows.length)
+        }
+      } else {
+        console.log('RPC success - inserted:', matchedIds.length)
+      }
 
       navigate('/my-matches')
 
     } catch (err) {
-      console.error('Error:', err)
+      console.error('Unexpected error:', err)
       navigate('/my-matches')
     } finally {
       setSaving(false)
