@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useAuth } from '../hooks/useAuth'
-import { supabase } from '../api/supabaseClient'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import supabase from '../api/supabaseClient'
 
 const questions = [
   { text: "I enjoy taking apart machines or gadgets to see how they work.", riasec: "R" },
@@ -53,8 +54,9 @@ function computeScores(answers) {
   return result
 }
 
-function AssessmentPage({ setActivePage }) {
+function AssessmentPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [phase, setPhase] = useState('intro')
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState(new Array(20).fill(null))
@@ -62,7 +64,7 @@ function AssessmentPage({ setActivePage }) {
 
   async function saveAssessmentResults(finalScores, topTraits) {
     if (!user) {
-      setActivePage('login')
+      navigate('/login')
       return
     }
     try {
@@ -72,7 +74,7 @@ function AssessmentPage({ setActivePage }) {
         top_traits: topTraits
       })
       if (!error) {
-        setActivePage('dashboard')
+        navigate('/dashboard')
       }
     } catch (err) {
       console.error('Error saving assessment:', err)

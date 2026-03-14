@@ -1,4 +1,7 @@
-function HomePage({ setActivePage }) {
+import { useNavigate } from 'react-router-dom'
+
+function HomePage() {
+  const navigate = useNavigate()
   return (
     <div className="pf-page">
       {/* HERO */}
@@ -6,8 +9,8 @@ function HomePage({ setActivePage }) {
         <h1>Shape Your Career<br /><em>With Confidence</em></h1>
         <p>Take a personality-based assessment, explore real careers, and get a personalized roadmap built around who you are.</p>
         <div className="hero-btns">
-          <button className="btn-teal" onClick={() => setActivePage('assessment')}>Start Assessment</button>
-          <button className="btn-ghost" onClick={() => setActivePage('skills')}>Browse Skills</button>
+          <button className="btn-teal" onClick={() => navigate('/assessment')}>Start Assessment</button>
+          <button className="btn-ghost" onClick={() => navigate('/skills')}>Browse Skills</button>
         </div>
       </div>
 
@@ -18,22 +21,22 @@ function HomePage({ setActivePage }) {
           <h2 className="section-title">Everything You Need to Find Your Career</h2>
           <p className="section-sub">Four powerful tools. One clear direction.</p>
           <div className="features-grid">
-            <div className="feat-card" onClick={() => setActivePage('assessment')}>
+            <div className="feat-card" onClick={() => navigate('/assessment')}>
               <div className="feat-icon">🧭</div>
               <h3>Career Assessment</h3>
               <p>RIASEC personality quiz that maps your traits to real careers in 3 minutes.</p>
             </div>
-            <div className="feat-card" onClick={() => setActivePage('skills')}>
+            <div className="feat-card" onClick={() => navigate('/skills')}>
               <div className="feat-icon">🎯</div>
               <h3>Skills Explorer</h3>
               <p>Browse 40+ skills by category and discover which careers need them most.</p>
             </div>
-            <div className="feat-card" onClick={() => setActivePage('dashboard')}>
+            <div className="feat-card" onClick={() => navigate('/dashboard')}>
               <div className="feat-icon">📊</div>
               <h3>Personal Dashboard</h3>
               <p>Your career HQ: saved matches, progress tracking, and a Q&A board.</p>
             </div>
-            <div className="feat-card" onClick={() => setActivePage('dashboard')}>
+            <div className="feat-card" onClick={() => navigate('/dashboard')}>
               <div className="feat-icon">💬</div>
               <h3>Community Q&A</h3>
               <p>Ask questions about any career. Get answers from peers and AI instantly.</p>
@@ -105,7 +108,7 @@ function HomePage({ setActivePage }) {
           <div className="cta-banner">
             <h2>Ready to Shape Your Path?</h2>
             <p>Take the 3-minute assessment. Discover your match. Build your future.</p>
-            <button className="btn-white" onClick={() => setActivePage('assessment')}>Start Your Assessment</button>
+            <button className="btn-white" onClick={() => navigate('/assessment')}>Start Your Assessment</button>
           </div>
         </div>
       </section>

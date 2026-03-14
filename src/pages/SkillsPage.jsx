@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const skillsData = [
   { name: "Web Development", cat: "Technical", desc: "Building and maintaining websites and web apps.", careers: 18 },
@@ -47,7 +48,8 @@ const categoryEmojis = {
   'Trades': '🔧 ',
 }
 
-function SkillsPage({ setActivePage }) {
+function SkillsPage() {
+  const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
   const [modalSkill, setModalSkill] = useState(null)
 

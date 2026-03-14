@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { useAuth } from '../hooks/useAuth'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
-function Nav({ activePage, setActivePage }) {
+function Nav() {
   const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   const displayName = user?.user_metadata?.full_name || user?.email || ''
@@ -10,27 +13,29 @@ function Nav({ activePage, setActivePage }) {
 
   async function handleSignOut() {
     await signOut()
-    setActivePage('home')
+    navigate('/')
   }
+
+  const isActive = (path) => location.pathname === path
 
   return (
     <nav className="pf-nav">
-      <button className="pf-nav-logo" onClick={() => setActivePage('home')}>
+      <button className="pf-nav-logo" onClick={() => navigate('/')}>
         Path<span>Finder</span>
       </button>
       <ul className="pf-nav-links">
         <li>
-          <button className={activePage === 'home' ? 'active' : ''} onClick={() => setActivePage('home')}>
+          <button className={isActive('/') ? 'active' : ''} onClick={() => navigate('/')}>
             Home
           </button>
         </li>
         <li>
-          <button className={activePage === 'assessment' ? 'active' : ''} onClick={() => setActivePage('assessment')}>
+          <button className={isActive('/assessment') ? 'active' : ''} onClick={() => navigate('/assessment')}>
             Career Assessment
           </button>
         </li>
         <li>
-          <button className={activePage === 'skills' ? 'active' : ''} onClick={() => setActivePage('skills')}>
+          <button className={isActive('/skills') ? 'active' : ''} onClick={() => navigate('/skills')}>
             Skills
           </button>
         </li>
@@ -38,17 +43,17 @@ function Nav({ activePage, setActivePage }) {
         {user && (
           <>
             <li>
-              <button className={activePage === 'discover' ? 'active' : ''} onClick={() => setActivePage('discover')}>
+              <button className={isActive('/discover') ? 'active' : ''} onClick={() => navigate('/discover')}>
                 Discover
               </button>
             </li>
             <li>
-              <button className={activePage === 'my-matches' ? 'active' : ''} onClick={() => setActivePage('my-matches')}>
+              <button className={isActive('/my-matches') ? 'active' : ''} onClick={() => navigate('/my-matches')}>
                 My Matches
               </button>
             </li>
             <li>
-              <button className={activePage === 'dashboard' ? 'active' : ''} onClick={() => setActivePage('dashboard')}>
+              <button className={isActive('/dashboard') ? 'active' : ''} onClick={() => navigate('/dashboard')}>
                 Dashboard
               </button>
             </li>
@@ -58,12 +63,12 @@ function Nav({ activePage, setActivePage }) {
         {!user && (
           <>
             <li>
-              <button className={`btn-nav-outline ${activePage === 'login' ? 'active' : ''}`} onClick={() => setActivePage('login')}>
+              <button className={`btn-nav-outline ${isActive('/login') ? 'active' : ''}`} onClick={() => navigate('/login')}>
                 Login
               </button>
             </li>
             <li>
-              <button className="btn-nav-solid" onClick={() => setActivePage('assessment')}>
+              <button className="btn-nav-solid" onClick={() => navigate('/assessment')}>
                 Start Assessment
               </button>
             </li>

@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
-function LoginPage({ setActivePage }) {
-  const { user, signIn, signUp, signInWithGoogle } = useAuth()
-  const [tab, setTab] = useState('login')
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginPassword, setLoginPassword] = useState('')
-  const [regName, setRegName] = useState('')
-  const [regEmail, setRegEmail] = useState('')
-  const [regPassword, setRegPassword] = useState('')
-  const [regConfirm, setRegConfirm] = useState('')
+function LoginPage() {
+  const { user, signIn, signUp } = useAuth()
+  const navigate = useNavigate()
+
+  const [activeTab, setActiveTab] = useState('login')
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -17,57 +18,75 @@ function LoginPage({ setActivePage }) {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      setActivePage('dashboard')
+      const params = new URLSearchParams(window.location.search)
+      navigate(params.get('redirect_to') || '/dashboard')
     }
-  }, [user, setActivePage])
+  }, [user, navigate])
 
+  // Handle Login
   async function handleLogin(e) {
     e.preventDefault()
-    if (!loginEmail || !loginPassword) {
-      setError('Please fill in all fields.')
+    setError('')
+    setMessage('')
+    if (!email || !password) {
+      setError('Please enter your email and password')
       return
     }
-    setError('')
     setLoading(true)
     try {
-      await signIn(loginEmail, loginPassword)
-      setMessage('✅ Logged in successfully!')
-      setActivePage('dashboard')
+      await signIn(email, password)
+      const params = new URLSearchParams(window.location.search)
+      navigate(params.get('redirect_to') || '/dashboard')
     } catch (err) {
-      setError(err.message)
+      if (err.message.includes('Invalid login credentials')) {
+        setError('Wrong email or password. Please try again.')
+      } else if (err.message.includes('Email not confirmed')) {
+        setError('Email not confirmed. Contact support.')
+      } else {
+        setError(err.message)
+      }
     } finally {
       setLoading(false)
     }
   }
 
+  // Handle Register
   async function handleRegister(e) {
     e.preventDefault()
-    if (!regName || !regEmail || !regPassword || !regConfirm) {
-      setError('Please fill in all fields.')
-      return
-    }
-    if (regPassword !== regConfirm) {
-      setError('Passwords do not match.')
-      return
-    }
     setError('')
+    setMessage('')
+    if (!fullName || fullName.trim().length < 2) {
+      setError('Please enter your full name')
+      return
+    }
+    if (!email.includes('@')) {
+      setError('Please enter a valid email')
+      return
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
     setLoading(true)
     try {
-      await signUp(regEmail, regPassword, regName)
-      setMessage('✅ Account created! Check your email to confirm.')
+      await signUp(email, password, fullName)
+      // Auto login right after register (works because email confirm is OFF)
+      await signIn(email, password)
+      navigate('/dashboard')
     } catch (err) {
-      setError(err.message)
+      if (err.message.includes('already registered')) {
+        setError('This email is already registered. Try logging in.')
+      } else if (err.message.includes('Database error')) {
+        setError('Something went wrong. Please try again.')
+      } else {
+        setError(err.message)
+      }
     } finally {
       setLoading(false)
-    }
-  }
-
-  async function handleGoogleLogin() {
-    setError('')
-    try {
-      await signInWithGoogle()
-    } catch (err) {
-      setError(err.message)
     }
   }
 
@@ -80,14 +99,14 @@ function LoginPage({ setActivePage }) {
 
           <div className="login-tabs">
             <button
-              className={`login-tab ${tab === 'login' ? 'active' : ''}`}
-              onClick={() => { setTab('login'); setMessage(''); }}
+              className={`login-tab ${activeTab === 'login' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('login'); setMessage(''); }}
             >
               Login
             </button>
             <button
-              className={`login-tab ${tab === 'register' ? 'active' : ''}`}
-              onClick={() => { setTab('register'); setMessage(''); }}
+              className={`login-tab ${activeTab === 'register' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('register'); setMessage(''); }}
             >
               Register
             </button>
@@ -122,7 +141,7 @@ function LoginPage({ setActivePage }) {
           )}
 
           {/* Login Form */}
-          {tab === 'login' && (
+          {activeTab === 'login' && (
             <form onSubmit={handleLogin}>
               <div className="form-group">
                 <label>Email</label>
@@ -130,8 +149,8 @@ function LoginPage({ setActivePage }) {
                   className="form-input"
                   type="email"
                   placeholder="you@school.edu"
-                  value={loginEmail}
-                  onChange={e => setLoginEmail(e.target.value)}
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                 />
               </div>
               <div className="form-group">
@@ -140,14 +159,14 @@ function LoginPage({ setActivePage }) {
                   className="form-input"
                   type="password"
                   placeholder="••••••••"
-                  value={loginPassword}
-                  onChange={e => setLoginPassword(e.target.value)}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
                 />
                 <a href="#" className="forgot-link" onClick={e => e.preventDefault()}>Forgot password?</a>
               </div>
-              <button className="btn-full" type="submit" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</button>
+              <button className="btn-full" type="submit" disabled={loading}>{loading ? 'Please wait...' : 'Login'}</button>
               <div className="divider"><span>or</span></div>
-              <button className="btn-google" type="button" onClick={handleGoogleLogin} disabled={loading}>
+              <button className="btn-google" type="button" disabled={loading}>
                 <svg className="google-icon" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -160,7 +179,7 @@ function LoginPage({ setActivePage }) {
           )}
 
           {/* Register Form */}
-          {tab === 'register' && (
+          {activeTab === 'register' && (
             <form onSubmit={handleRegister}>
               <div className="form-group">
                 <label>Full Name</label>
@@ -168,8 +187,8 @@ function LoginPage({ setActivePage }) {
                   className="form-input"
                   type="text"
                   placeholder="Alex Johnson"
-                  value={regName}
-                  onChange={e => setRegName(e.target.value)}
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
                 />
               </div>
               <div className="form-group">
@@ -178,8 +197,8 @@ function LoginPage({ setActivePage }) {
                   className="form-input"
                   type="email"
                   placeholder="you@school.edu"
-                  value={regEmail}
-                  onChange={e => setRegEmail(e.target.value)}
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
                 />
               </div>
               <div className="form-group">
@@ -188,8 +207,8 @@ function LoginPage({ setActivePage }) {
                   className="form-input"
                   type="password"
                   placeholder="••••••••"
-                  value={regPassword}
-                  onChange={e => setRegPassword(e.target.value)}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
                 />
               </div>
               <div className="form-group">
@@ -198,13 +217,13 @@ function LoginPage({ setActivePage }) {
                   className="form-input"
                   type="password"
                   placeholder="••••••••"
-                  value={regConfirm}
-                  onChange={e => setRegConfirm(e.target.value)}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
                 />
               </div>
-              <button className="btn-full" type="submit" disabled={loading}>{loading ? 'Creating...' : 'Create Account'}</button>
+              <button className="btn-full" type="submit" disabled={loading}>{loading ? 'Please wait...' : 'Create Account'}</button>
               <div className="divider"><span>or</span></div>
-              <button className="btn-google" type="button" onClick={handleGoogleLogin} disabled={loading}>
+              <button className="btn-google" type="button" disabled={loading}>
                 <svg className="google-icon" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -215,6 +234,7 @@ function LoginPage({ setActivePage }) {
               </button>
             </form>
           )}
+
         </div>
       </div>
     </div>

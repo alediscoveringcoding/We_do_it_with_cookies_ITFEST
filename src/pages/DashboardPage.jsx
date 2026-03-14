@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../hooks/useAuth'
-import { supabase } from '../api/supabaseClient'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import supabase from '../api/supabaseClient'
 
 const careers = [
   { pct: '91%', title: 'UX Researcher', salary: '$72k – $115k/yr', saved: true },
@@ -35,8 +36,9 @@ const aiAnswers = {
   3: "Start with spec work — redesign an existing brand, create a concept for a local business, or reimagine a well-known app. Platforms like Dribbble, Behance, and even Instagram are great for showcasing your work. Consider entering student design competitions or contributing to open-source projects that need visual assets. Quality over quantity — 4 strong pieces beat 20 average ones.",
 }
 
-function DashboardPage({ setActivePage }) {
+function DashboardPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [assessment, setAssessment] = useState(null)
   const [matches, setMatches] = useState([])
   const [matchCount, setMatchCount] = useState(0)
@@ -140,7 +142,7 @@ function DashboardPage({ setActivePage }) {
             <h2>Welcome back, Alex 👋</h2>
             <p>Your top match: <strong>UX Researcher</strong> · Last assessment: March 10, 2026</p>
           </div>
-          <button className="btn-retake" onClick={() => setActivePage('assessment')}>↺ Retake Assessment</button>
+          <button className="btn-retake" onClick={() => navigate('/assessment')}>↺ Retake Assessment</button>
         </div>
 
         {/* Stats */}
