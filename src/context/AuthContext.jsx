@@ -3,7 +3,7 @@ import { supabase } from '../api/supabaseClient'
 
 export const AuthContext = createContext()
 
-export function AuthContextProvider({ children }) {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -19,7 +19,7 @@ export function AuthContextProvider({ children }) {
 
     getSession()
 
-    // Listen for auth changes
+    // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session)
@@ -28,8 +28,32 @@ export function AuthContextProvider({ children }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => subscription?.unsubscribe()
   }, [])
+
+  const signIn = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
+    return data
+  }
+
+  const signUp = async (email, password, fullName) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } }
+    })
+    if (error) throw error
+    return data
+  }
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/dashboard' }
+    })
+    if (error) throw error
+  }
 
   const signOut = async () => {
     await supabase.auth.signOut()
@@ -39,6 +63,9 @@ export function AuthContextProvider({ children }) {
     user,
     session,
     loading,
+    signIn,
+    signUp,
+    signInWithGoogle,
     signOut
   }
 
@@ -50,5 +77,8 @@ export function AuthContextProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext)
-}
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context}

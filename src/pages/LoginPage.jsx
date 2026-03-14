@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../hooks/useAuth'
 
 function LoginPage({ setActivePage }) {
+  const { user, signIn, signUp, signInWithGoogle } = useAuth()
   const [tab, setTab] = useState('login')
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
@@ -8,28 +10,65 @@ function LoginPage({ setActivePage }) {
   const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
   const [regConfirm, setRegConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
-  function handleLogin(e) {
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      setActivePage('dashboard')
+    }
+  }, [user, setActivePage])
+
+  async function handleLogin(e) {
     e.preventDefault()
     if (!loginEmail || !loginPassword) {
-      setMessage('Please fill in all fields.')
+      setError('Please fill in all fields.')
       return
     }
-    setMessage('✅ Logged in successfully! (Demo mode)')
+    setError('')
+    setLoading(true)
+    try {
+      await signIn(loginEmail, loginPassword)
+      setMessage('✅ Logged in successfully!')
+      setActivePage('dashboard')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function handleRegister(e) {
+  async function handleRegister(e) {
     e.preventDefault()
     if (!regName || !regEmail || !regPassword || !regConfirm) {
-      setMessage('Please fill in all fields.')
+      setError('Please fill in all fields.')
       return
     }
     if (regPassword !== regConfirm) {
-      setMessage('Passwords do not match.')
+      setError('Passwords do not match.')
       return
     }
-    setMessage('✅ Account created! Welcome to PathFinder. (Demo mode)')
+    setError('')
+    setLoading(true)
+    try {
+      await signUp(regEmail, regPassword, regName)
+      setMessage('✅ Account created! Check your email to confirm.')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setError('')
+    try {
+      await signInWithGoogle()
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   return (
@@ -68,6 +107,20 @@ function LoginPage({ setActivePage }) {
             </div>
           )}
 
+          {error && (
+            <div style={{
+              background: '#fee2e2',
+              color: '#991b1b',
+              borderRadius: '8px',
+              padding: '0.7rem 1rem',
+              fontSize: '0.88rem',
+              marginBottom: '1rem',
+              fontWeight: 500,
+            }}>
+              {error}
+            </div>
+          )}
+
           {/* Login Form */}
           {tab === 'login' && (
             <form onSubmit={handleLogin}>
@@ -92,9 +145,9 @@ function LoginPage({ setActivePage }) {
                 />
                 <a href="#" className="forgot-link" onClick={e => e.preventDefault()}>Forgot password?</a>
               </div>
-              <button className="btn-full" type="submit">Login</button>
+              <button className="btn-full" type="submit" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</button>
               <div className="divider"><span>or</span></div>
-              <button className="btn-google" type="button">
+              <button className="btn-google" type="button" onClick={handleGoogleLogin} disabled={loading}>
                 <svg className="google-icon" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -149,9 +202,9 @@ function LoginPage({ setActivePage }) {
                   onChange={e => setRegConfirm(e.target.value)}
                 />
               </div>
-              <button className="btn-full" type="submit">Create Account</button>
+              <button className="btn-full" type="submit" disabled={loading}>{loading ? 'Creating...' : 'Create Account'}</button>
               <div className="divider"><span>or</span></div>
-              <button className="btn-google" type="button">
+              <button className="btn-google" type="button" onClick={handleGoogleLogin} disabled={loading}>
                 <svg className="google-icon" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>

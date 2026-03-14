@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../api/supabaseClient'
 
 const careers = [
   { pct: '91%', title: 'UX Researcher', salary: '$72k – $115k/yr', saved: true },
@@ -34,11 +36,47 @@ const aiAnswers = {
 }
 
 function DashboardPage({ setActivePage }) {
+  const { user } = useAuth()
+  const [assessment, setAssessment] = useState(null)
+  const [matches, setMatches] = useState([])
+  const [matchCount, setMatchCount] = useState(0)
   const [savedCareers, setSavedCareers] = useState(new Set(['UX Researcher']))
   const [qaItems, setQAItems] = useState(initialQA)
   const [qaInput, setQAInput] = useState('')
   const [qaFilter, setQAFilter] = useState('All')
   const [nextId, setNextId] = useState(100)
+
+  useEffect(() => {
+    if (!user) return
+
+    // Fetch latest assessment
+    const fetchAssessment = async () => {
+      const { data } = await supabase
+        .from('assessments')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      if (data) setAssessment(data)
+    }
+
+    // Fetch YES university matches
+    const fetchMatches = async () => {
+      const { data } = await supabase
+        .from('user_university_choices')
+        .select('*, universities(*)')
+        .eq('user_id', user.id)
+        .eq('choice', 'yes')
+      if (data) {
+        setMatches(data || [])
+        setMatchCount(data?.length || 0)
+      }
+    }
+
+    fetchAssessment()
+    fetchMatches()
+  }, [user])
 
   function toggleSave(title) {
     setSavedCareers(prev => {

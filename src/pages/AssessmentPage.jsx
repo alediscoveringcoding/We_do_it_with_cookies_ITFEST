@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useAuth } from '../hooks/useAuth'
+import { supabase } from '../api/supabaseClient'
 
 const questions = [
   { text: "I enjoy taking apart machines or gadgets to see how they work.", riasec: "R" },
@@ -52,10 +54,30 @@ function computeScores(answers) {
 }
 
 function AssessmentPage({ setActivePage }) {
+  const { user } = useAuth()
   const [phase, setPhase] = useState('intro')
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState(new Array(20).fill(null))
   const [scores, setScores] = useState({})
+
+  async function saveAssessmentResults(finalScores, topTraits) {
+    if (!user) {
+      setActivePage('login')
+      return
+    }
+    try {
+      const { error } = await supabase.from('assessments').insert({
+        user_id: user.id,
+        riasec_scores: finalScores,
+        top_traits: topTraits
+      })
+      if (!error) {
+        setActivePage('dashboard')
+      }
+    } catch (err) {
+      console.error('Error saving assessment:', err)
+    }
+  }
 
   const siState = (dot) => {
     if (phase === 'intro') return dot === 1 ? 'done active' : ''
@@ -217,7 +239,13 @@ function AssessmentPage({ setActivePage }) {
               <button
                 className="btn-primary-teal"
                 style={{ padding: '0.9rem 2.2rem', fontSize: '1rem' }}
-                onClick={() => setActivePage('dashboard')}
+                onClick={() => {
+                  const topTraits = Object.entries(scores)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(([key]) => key)
+                  saveAssessmentResults(scores, topTraits)
+                }}
               >
                 See My Career Matches →
               </button>
