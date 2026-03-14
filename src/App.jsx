@@ -1,19 +1,24 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Home from './pages/Home'
-import Assessment from './pages/Assessment'
-import Dashboard from './pages/Dashboard'
-import Login from './pages/Login'
+import { useState } from 'react'
+import Nav from './pages/Nav'
+import HomePage from './pages/HomePage'
+import AssessmentPage from './pages/AssessmentPage'
+import DashboardPage from './pages/DashboardPage'
+import LoginPage from './pages/LoginPage'
+import SkillsPage from './pages/SkillsPage'
 
 function App() {
+  const [activePage, setActivePage] = useState('home')
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/assessment" element={<Assessment />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/login" element={<Login />} />
-      </Routes>
-    </Router>
+    <div className="pf-root">
+      <Nav activePage={activePage} setActivePage={setActivePage} />
+      
+      {activePage === 'home' && <HomePage setActivePage={setActivePage} />}
+      {activePage === 'assessment' && <AssessmentPage setActivePage={setActivePage} />}
+      {activePage === 'dashboard' && <DashboardPage setActivePage={setActivePage} />}
+      {activePage === 'skills' && <SkillsPage setActivePage={setActivePage} />}
+      {activePage === 'login' && <LoginPage setActivePage={setActivePage} />}
+    </div>
   )
 }
 

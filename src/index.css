@@ -1,4 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
+@import "./pathfinder.css";
 
 /* Custom styles for PathFinder */
 .line-clamp-2 {
@@ -13,4 +15,8 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
 }
