@@ -121,27 +121,119 @@ export default function MyMatchesPage() {
   if (savedUniversities.length === 0) return (
     <div style={{ maxWidth:600, margin:'0 auto',
       padding:'5rem 2rem', textAlign:'center' }}>
-      <div style={{ fontSize:'4rem', marginBottom:'1rem' }}>🎓</div>
+      <div style={{ fontSize:'4rem', marginBottom:'1rem' }}>📋</div>
       <h2 style={{ fontFamily:'Playfair Display, serif',
         fontSize:'1.8rem', fontWeight:900, marginBottom:'0.75rem' }}>
-        No saved universities yet
+        No matches yet
       </h2>
-      <p style={{ color:'#6b7280', marginBottom:'2rem' }}>
-        Go to Discover and save universities you're interested in first.
+      <p style={{ color:'#6b7280', marginBottom:'0.5rem' }}>
+        Take the RIASEC assessment first to get your
+        personalized university matches.
       </p>
-      <button
-        onClick={() => navigate('/discover')}
-        style={{ background:'#0d9488', color:'#fff', border:'none',
-          padding:'0.85rem 2rem', borderRadius:50, fontWeight:700,
-          fontSize:'1rem', cursor:'pointer',
-          fontFamily:'DM Sans, sans-serif' }}>
-        Start Discovering →
-      </button>
+      <p style={{ color:'#9ca3af', fontSize:'0.85rem',
+        marginBottom:'2rem' }}>
+        Or browse universities manually on the Discover page.
+      </p>
+      <div style={{ display:'flex', gap:'1rem',
+        justifyContent:'center', flexWrap:'wrap' }}>
+        <button
+          onClick={() => navigate('/assessment')}
+          style={{ background:'#0d9488', color:'#fff', border:'none',
+            padding:'0.85rem 1.8rem', borderRadius:50, fontWeight:700,
+            fontSize:'0.95rem', cursor:'pointer',
+            fontFamily:'DM Sans, sans-serif' }}>
+          Take Assessment →
+        </button>
+        <button
+          onClick={() => navigate('/discover')}
+          style={{ background:'#fff', color:'#0d9488',
+            border:'2px solid #0d9488',
+            padding:'0.85rem 1.8rem', borderRadius:50, fontWeight:700,
+            fontSize:'0.95rem', cursor:'pointer',
+            fontFamily:'DM Sans, sans-serif' }}>
+          Browse Manually
+        </button>
+      </div>
     </div>
   )
 
   return (
     <div style={{ maxWidth:1100, margin:'0 auto', padding:'2.5rem 2rem' }}>
+
+      {/* Header */}
+      <div style={{ textAlign:'center', marginBottom:'2.5rem' }}>
+        <div style={{
+          display:'inline-block', background:'#ccfbf1',
+          color:'#0d9488', fontSize:'0.78rem', fontWeight:700,
+          padding:'0.3rem 0.9rem', borderRadius:50,
+          textTransform:'uppercase', letterSpacing:'0.08em',
+          marginBottom:'0.75rem'
+        }}>
+          Your Matches
+        </div>
+        <h1 style={{
+          fontFamily:'Playfair Display, serif',
+          fontSize:'clamp(1.8rem, 3vw, 2.4rem)',
+          fontWeight:900, marginBottom:'0.5rem'
+        }}>
+          Your Matched Universities 🎓
+        </h1>
+        <p style={{ color:'#6b7280', fontSize:'0.95rem', maxWidth:500,
+          margin:'0 auto' }}>
+          Based on your RIASEC profile, we found{' '}
+          <strong style={{ color:'#0d9488' }}>
+            {savedUniversities.length} universities
+          </strong>
+          {' '}that match your personality. Swipe through them to build
+          your final shortlist.
+        </p>
+      </div>
+
+      {/* Stats bar */}
+      {savedUniversities.length > 0 && (
+        <div style={{
+          display:'grid',
+          gridTemplateColumns:'repeat(3, 1fr)',
+          gap:'1rem', maxWidth:500,
+          margin:'0 auto 3rem',
+          background:'#fff', borderRadius:16,
+          border:'1px solid #e5e7eb',
+          padding:'1.25rem'
+        }}>
+          <div style={{ textAlign:'center' }}>
+            <div style={{ fontFamily:'Playfair Display, serif',
+              fontSize:'1.8rem', fontWeight:900,
+              color:'#0d9488' }}>
+              {savedUniversities.length}
+            </div>
+            <div style={{ fontSize:'0.75rem', color:'#6b7280' }}>
+              Total Matched
+            </div>
+          </div>
+          <div style={{ textAlign:'center',
+            borderLeft:'1px solid #e5e7eb',
+            borderRight:'1px solid #e5e7eb' }}>
+            <div style={{ fontFamily:'Playfair Display, serif',
+              fontSize:'1.8rem', fontWeight:900,
+              color:'#374151' }}>
+              {pendingSwipe.length}
+            </div>
+            <div style={{ fontSize:'0.75rem', color:'#6b7280' }}>
+              Left to Review
+            </div>
+          </div>
+          <div style={{ textAlign:'center' }}>
+            <div style={{ fontFamily:'Playfair Display, serif',
+              fontSize:'1.8rem', fontWeight:900,
+              color:'#2d6a4f' }}>
+              {finalShortlist.length}
+            </div>
+            <div style={{ fontSize:'0.75rem', color:'#6b7280' }}>
+              In Shortlist
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== SECTION 1: SWIPE QUEUE ===== */}
       {pendingSwipe.length > 0 && (

@@ -42,6 +42,7 @@ function DashboardPage() {
   const [assessment, setAssessment] = useState(null)
   const [matches, setMatches] = useState([])
   const [matchCount, setMatchCount] = useState(0)
+  const [shortlistCount, setShortlistCount] = useState(0)
   const [savedCareers, setSavedCareers] = useState(new Set(['UX Researcher']))
   const [qaItems, setQAItems] = useState(initialQA)
   const [qaInput, setQAInput] = useState('')
@@ -76,8 +77,21 @@ function DashboardPage() {
       }
     }
 
+    // Fetch shortlist count (final_decision = 'keep')
+    const fetchShortlist = async () => {
+      const { data } = await supabase
+        .from('user_university_choices')
+        .select('university_id')
+        .eq('user_id', user.id)
+        .eq('final_decision', 'keep')
+      if (data) {
+        setShortlistCount(data?.length || 0)
+      }
+    }
+
     fetchAssessment()
     fetchMatches()
+    fetchShortlist()
   }, [user])
 
   function toggleSave(title) {
@@ -187,6 +201,26 @@ function DashboardPage() {
               </div>
               <div className="prog-num">{savedCareers.size}</div>
               <div className="prog-label">Careers Saved</div>
+            </div>
+            <div className="prog-stat">
+              <div className="prog-ring">
+                <svg viewBox="0 0 70 70">
+                  <circle cx="35" cy="35" r="28" fill="none" stroke="var(--border)" strokeWidth="6"/>
+                  <circle cx="35" cy="35" r="28" fill="none" stroke="var(--teal)" strokeWidth="6" strokeDasharray="175.9" strokeDashoffset="110" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div className="prog-num">{matchCount}</div>
+              <div className="prog-label">Universities Matched</div>
+            </div>
+            <div className="prog-stat">
+              <div className="prog-ring">
+                <svg viewBox="0 0 70 70">
+                  <circle cx="35" cy="35" r="28" fill="none" stroke="var(--border)" strokeWidth="6"/>
+                  <circle cx="35" cy="35" r="28" fill="none" stroke="var(--teal)" strokeWidth="6" strokeDasharray="175.9" strokeDashoffset="130" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div className="prog-num">{shortlistCount}</div>
+              <div className="prog-label">In Your Shortlist</div>
             </div>
           </div>
         </div>

@@ -61,23 +61,86 @@ function AssessmentPage() {
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState(new Array(20).fill(null))
   const [scores, setScores] = useState({})
+  const [saving, setSaving] = useState(false)
 
   async function saveAssessmentResults(finalScores, topTraits) {
     if (!user) {
-      navigate('/login')
+      navigate('/login?redirect_to=/my-matches')
       return
     }
+
+    setSaving(true)
+
     try {
-      const { error } = await supabase.from('assessments').insert({
+      console.log('Top traits:', topTraits)
+
+      // Step 1: Save assessment to Supabase
+      await supabase.from('assessments').insert({
         user_id: user.id,
         riasec_scores: finalScores,
         top_traits: topTraits
       })
-      if (!error) {
-        navigate('/discover')
+
+      // Step 2: Fetch ALL universities
+      const { data: allUniversities, error: uniError } = await supabase
+        .from('universities')
+        .select('id, riasec_tags')
+
+      if (uniError) {
+        console.error('Error fetching universities:', uniError)
+        navigate('/my-matches')
+        return
       }
+
+      console.log('Total universities fetched:', allUniversities?.length)
+
+      // Step 3: Filter by RIASEC overlap
+      const matched = (allUniversities || []).filter(uni =>
+        Array.isArray(uni.riasec_tags) &&
+        uni.riasec_tags.some(tag => topTraits.includes(tag))
+      )
+
+      console.log('Matched universities:', matched.length)
+
+      // Step 4: Delete previous auto-matches for this user
+      // This ensures a fresh set every time they retake the test
+      await supabase
+        .from('user_university_choices')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('source', 'auto_match')
+
+      // Step 5: Insert ALL matched universities at once
+      if (matched.length > 0) {
+        const toInsert = matched.map(uni => ({
+          user_id: user.id,
+          university_id: uni.id,
+          choice: 'yes',
+          source: 'auto_match',
+          final_decision: null
+        }))
+
+        console.log('Inserting:', toInsert.length, 'universities')
+
+        const { error: insertError } = await supabase
+          .from('user_university_choices')
+          .insert(toInsert)
+
+        if (insertError) {
+          console.error('Insert error:', insertError)
+        } else {
+          console.log('Successfully inserted', toInsert.length, 'universities')
+        }
+      }
+
+      // Step 6: Navigate to My Matches
+      navigate('/my-matches')
+
     } catch (err) {
-      console.error('Error saving assessment:', err)
+      console.error('saveAssessmentResults error:', err)
+      navigate('/my-matches')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -248,8 +311,9 @@ function AssessmentPage() {
                     .map(([key]) => key)
                   saveAssessmentResults(scores, topTraits)
                 }}
+                disabled={saving}
               >
-                See My Career Matches →
+                {saving ? 'Finding your matches...' : 'See My Career Matches →'}
               </button>
               <p style={{ marginTop: '0.8rem', color: 'var(--soft)', fontSize: '0.82rem' }}>
                 Sign in to save your results permanently
