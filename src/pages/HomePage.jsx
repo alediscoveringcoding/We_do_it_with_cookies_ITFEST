@@ -3,7 +3,6 @@ function HomePage({ setActivePage }) {
     <div className="pf-page">
       {/* HERO */}
       <div className="pf-hero">
-        <div className="hero-badge">🎓 For high school students ready to find their path</div>
         <h1>Shape Your Career<br /><em>With Confidence</em></h1>
         <p>Take a personality-based assessment, explore real careers, and get a personalized roadmap built around who you are.</p>
         <div className="hero-btns">
