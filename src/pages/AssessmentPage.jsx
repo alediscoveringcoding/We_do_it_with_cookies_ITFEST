@@ -74,7 +74,7 @@ function AssessmentPage() {
         top_traits: topTraits
       })
       if (!error) {
-        navigate('/dashboard')
+        navigate('/discover')
       }
     } catch (err) {
       console.error('Error saving assessment:', err)

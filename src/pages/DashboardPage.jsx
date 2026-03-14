@@ -204,7 +204,7 @@ function DashboardPage() {
             transition: 'transform 0.2s, box-shadow 0.2s',
             border: 'none',
           }}
-          onClick={() => setActivePage('discover')}
+          onClick={() => navigate('/discover')}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-4px)';
             e.currentTarget.style.boxShadow = '0 12px 32px rgba(13, 148, 136, 0.25)';
