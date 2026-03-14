@@ -72,72 +72,46 @@ function AssessmentPage() {
     setSaving(true)
 
     try {
-      console.log('Top traits:', topTraits)
+      // Calculate top 3 traits
+      const topThreeTraits = Object.entries(finalScores)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([key]) => key)
 
-      // Step 1: Save assessment to Supabase
+      // Save assessment
       await supabase.from('assessments').insert({
         user_id: user.id,
         riasec_scores: finalScores,
-        top_traits: topTraits
+        top_traits: topThreeTraits
       })
 
-      // Step 2: Fetch ALL universities
-      const { data: allUniversities, error: uniError } = await supabase
+      // Fetch all universities
+      const { data: allUniversities } = await supabase
         .from('universities')
         .select('id, riasec_tags')
 
-      if (uniError) {
-        console.error('Error fetching universities:', uniError)
-        navigate('/my-matches')
-        return
-      }
-
-      console.log('Total universities fetched:', allUniversities?.length)
-
-      // Step 3: Filter by RIASEC overlap
+      // Filter matched
       const matched = (allUniversities || []).filter(uni =>
         Array.isArray(uni.riasec_tags) &&
-        uni.riasec_tags.some(tag => topTraits.includes(tag))
+        uni.riasec_tags.some(tag => topThreeTraits.includes(tag))
       )
 
-      console.log('Matched universities:', matched.length)
+      // Get just the IDs
+      const matchedIds = matched.map(u => u.id)
 
-      // Step 4: Delete previous auto-matches for this user
-      // This ensures a fresh set every time they retake the test
-      await supabase
-        .from('user_university_choices')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('source', 'auto_match')
+      // Call the SQL function — inserts ALL at once server-side
+      const { error } = await supabase.rpc('insert_university_matches', {
+        p_user_id: user.id,
+        p_university_ids: matchedIds
+      })
 
-      // Step 5: Insert ALL matched universities at once
-      if (matched.length > 0) {
-        const toInsert = matched.map(uni => ({
-          user_id: user.id,
-          university_id: uni.id,
-          choice: 'yes',
-          source: 'auto_match',
-          final_decision: null
-        }))
+      if (error) console.error('RPC error:', error)
+      else console.log('Inserted', matchedIds.length, 'universities')
 
-        console.log('Inserting:', toInsert.length, 'universities')
-
-        const { error: insertError } = await supabase
-          .from('user_university_choices')
-          .insert(toInsert)
-
-        if (insertError) {
-          console.error('Insert error:', insertError)
-        } else {
-          console.log('Successfully inserted', toInsert.length, 'universities')
-        }
-      }
-
-      // Step 6: Navigate to My Matches
       navigate('/my-matches')
 
     } catch (err) {
-      console.error('saveAssessmentResults error:', err)
+      console.error('Error:', err)
       navigate('/my-matches')
     } finally {
       setSaving(false)
