@@ -368,7 +368,13 @@ export default function DiscoverPage() {
                   {isSaved ? '❤️ Saved' : '🤍 Save'}
                 </button>
                 <button
-                  onClick={() => setSelectedUniversity(uni)}
+                  onClick={() => {
+                    if (uni.website) {
+                      window.open(uni.website, '_blank')
+                    } else {
+                      setSelectedUniversity(uni)
+                    }
+                  }}
                   style={{
                     flex:1, padding:'0.5rem', borderRadius:50,
                     fontSize:'0.82rem', fontWeight:600, cursor:'pointer',
