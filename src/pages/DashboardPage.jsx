@@ -151,6 +151,53 @@ function DashboardPage({ setActivePage }) {
           </div>
         </div>
 
+        {/* Discover Universities CTA */}
+        <div
+          className="dash-card"
+          style={{
+            background: 'linear-gradient(135deg, var(--teal) 0%, var(--green) 100%)',
+            color: 'white',
+            gridColumn: '1 / -1',
+            padding: '2rem',
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            border: 'none',
+          }}
+          onClick={() => setActivePage('discover')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)';
+            e.currentTarget.style.boxShadow = '0 12px 32px rgba(13, 148, 136, 0.25)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'var(--shadow)';
+          }}
+        >
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎓</div>
+          <h3 style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Discover Universities</h3>
+          <p style={{ marginBottom: '1rem', opacity: 0.9 }}>
+            Swipe through {savedCareers.size > 0 ? 'universities tailored to your profile' : 'hundreds of universities'} and build your shortlist
+          </p>
+          <button
+            style={{
+              background: 'white',
+              color: 'var(--teal)',
+              border: 'none',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '50px',
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => (e.target.style.opacity = '0.9')}
+            onMouseLeave={(e) => (e.target.style.opacity = '1')}
+          >
+            Start Discovering →
+          </button>
+        </div>
+
         {/* Grid: Matches + Bookmarks */}
         <div className="dashboard-grid">
           {/* Career Matches */}

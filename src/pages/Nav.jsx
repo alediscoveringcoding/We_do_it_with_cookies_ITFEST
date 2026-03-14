@@ -21,6 +21,16 @@ function Nav({ activePage, setActivePage }) {
           </button>
         </li>
         <li>
+          <button className={activePage === 'discover' ? 'active' : ''} onClick={() => setActivePage('discover')}>
+            Discover
+          </button>
+        </li>
+        <li>
+          <button className={activePage === 'my-matches' ? 'active' : ''} onClick={() => setActivePage('my-matches')}>
+            My Matches
+          </button>
+        </li>
+        <li>
           <button className={activePage === 'dashboard' ? 'active' : ''} onClick={() => setActivePage('dashboard')}>
             Dashboard
           </button>
