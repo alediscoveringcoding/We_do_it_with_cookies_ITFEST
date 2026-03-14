@@ -267,6 +267,7 @@ export default function DiscoverPage() {
           return (
             <div
               key={uni.id}
+              onClick={() => setSelectedUniversity(uni)}
               style={{
                 background: '#fff',
                 borderRadius: 16,
@@ -368,11 +369,10 @@ export default function DiscoverPage() {
                   {isSaved ? '❤️ Saved' : '🤍 Save'}
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation()
                     if (uni.website) {
                       window.open(uni.website, '_blank')
-                    } else {
-                      setSelectedUniversity(uni)
                     }
                   }}
                   style={{
@@ -470,6 +470,21 @@ export default function DiscoverPage() {
                 </span>
               ))}
             </div>
+
+            {/* Visit Website button */}
+            {selectedUniversity.website && (
+              <button
+                onClick={() => window.open(selectedUniversity.website, '_blank')}
+                style={{
+                  width:'100%', padding:'0.85rem', borderRadius:50,
+                  fontWeight:700, fontSize:'1rem', cursor:'pointer',
+                  border:'none', fontFamily:'DM Sans, sans-serif',
+                  background:'#0d9488', color:'#fff',
+                  transition:'all 0.2s', marginBottom:'0.75rem'
+                }}>
+                Visit Website →
+              </button>
+            )}
 
             {/* Save button in modal */}
             <button

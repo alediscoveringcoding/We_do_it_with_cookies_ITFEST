@@ -11,6 +11,7 @@ export default function MyMatchesPage() {
   const [currentSwipeIndex, setCurrentSwipeIndex] = useState(0)
   const [swipeAnimation, setSwipeAnimation] = useState(null)
   // swipeAnimation = 'left' | 'right' | null
+  const [selectedShortlistUni, setSelectedShortlistUni] = useState(null)
 
   // Fetch all saved universities (choice = 'yes')
   useEffect(() => {
@@ -345,7 +346,7 @@ export default function MyMatchesPage() {
 
                 {/* Description */}
                 <p style={{ color:'#6b7280', fontSize:'0.95rem',
-                  lineHeight:1.6 }}>
+                  lineHeight:1.6, marginBottom:'1rem' }}>
                   {currentCard.universities?.description}
                 </p>
               </div>
@@ -457,15 +458,25 @@ export default function MyMatchesPage() {
             gap:'1.5rem'
           }}>
             {finalShortlist.map((item, index) => (
-              <div key={item.university_id} style={{
+              <div key={item.university_id}
+                onClick={() => setSelectedShortlistUni(item.universities)}
+                style={{
                 background:'#fff', borderRadius:16,
                 border:'1px solid #e5e7eb',
                 borderLeft:'4px solid #0d9488',
                 padding:'1.5rem',
                 boxShadow:'0 4px 16px rgba(0,0,0,0.05)',
                 transition:'all 0.2s',
-                position:'relative'
-              }}>
+                position:'relative', cursor:'pointer'
+              }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-4px)'
+                  e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.08)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.05)'
+                }}>
                 {/* Rank badge */}
                 <div style={{
                   position:'absolute', top:16, right:16,
@@ -520,7 +531,10 @@ export default function MyMatchesPage() {
 
                 {/* Remove button */}
                 <button
-                  onClick={() => removeFromShortlist(item.university_id)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removeFromShortlist(item.university_id)
+                  }}
                   style={{
                     width:'100%', padding:'0.5rem',
                     borderRadius:50, fontSize:'0.82rem',
@@ -554,6 +568,121 @@ export default function MyMatchesPage() {
           <p style={{ color:'#9ca3af', fontSize:'0.9rem' }}>
             Your final shortlist will appear here as you swipe ✓
           </p>
+        </div>
+      )}
+
+      {/* Shortlist University Detail Modal */}
+      {selectedShortlistUni && (
+        <div
+          onClick={() => setSelectedShortlistUni(null)}
+          style={{
+            position:'fixed', inset:0,
+            background:'rgba(0,0,0,0.5)', zIndex:200,
+            display:'flex', alignItems:'center',
+            justifyContent:'center', padding:'2rem'
+          }}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background:'#fff', borderRadius:20,
+              maxWidth:560, width:'100%',
+              padding:'2rem', maxHeight:'85vh',
+              overflowY:'auto', position:'relative'
+            }}>
+            <button
+              onClick={() => setSelectedShortlistUni(null)}
+              style={{
+                position:'absolute', top:16, right:16,
+                background:'#f3f4f6', border:'none',
+                width:32, height:32, borderRadius:'50%',
+                cursor:'pointer', fontSize:'1rem'
+              }}>
+              ✕
+            </button>
+
+            {/* Modal type + city */}
+            <div style={{ display:'flex', gap:'0.5rem',
+              marginBottom:'1rem', flexWrap:'wrap' }}>
+              <span style={{
+                background:'#f3f4f6', color:'#374151',
+                fontSize:'0.75rem', fontWeight:700,
+                padding:'0.25rem 0.8rem', borderRadius:50
+              }}>
+                {selectedShortlistUni.type}
+              </span>
+              <span style={{ color:'#6b7280', fontSize:'0.85rem',
+                display:'flex', alignItems:'center', gap:'0.3rem' }}>
+                📍 {selectedShortlistUni.city}
+              </span>
+            </div>
+
+            {/* Modal name */}
+            <h2 style={{
+              fontFamily:'Playfair Display, serif',
+              fontSize:'1.6rem', fontWeight:900,
+              marginBottom:'0.75rem', lineHeight:1.2
+            }}>
+              {selectedShortlistUni.name}
+            </h2>
+
+            {/* Modal description */}
+            <p style={{ color:'#374151', fontSize:'0.95rem',
+              lineHeight:1.7, marginBottom:'1.5rem' }}>
+              {selectedShortlistUni.description}
+            </p>
+
+            {/* RIASEC match section */}
+            <h4 style={{ fontSize:'0.8rem', fontWeight:700,
+              textTransform:'uppercase', letterSpacing:'0.06em',
+              color:'#9ca3af', marginBottom:'0.75rem' }}>
+              RIASEC Profile Match
+            </h4>
+            <div style={{ display:'flex', gap:'0.5rem',
+              flexWrap:'wrap', marginBottom:'1.5rem' }}>
+              {selectedShortlistUni.riasec_tags?.map(tag => (
+                <span key={tag} style={{
+                  background: riasecColors[tag]?.bg,
+                  color: riasecColors[tag]?.text,
+                  padding:'0.3rem 0.9rem', borderRadius:50,
+                  fontSize:'0.82rem', fontWeight:600
+                }}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {/* Visit Website button */}
+            {selectedShortlistUni.website && (
+              <button
+                onClick={() => window.open(selectedShortlistUni.website, '_blank')}
+                style={{
+                  width:'100%', padding:'0.85rem', borderRadius:50,
+                  fontWeight:700, fontSize:'1rem', cursor:'pointer',
+                  border:'none', fontFamily:'DM Sans, sans-serif',
+                  background:'#0d9488', color:'#fff',
+                  transition:'all 0.2s', marginBottom:'0.75rem'
+                }}>
+                Visit Website →
+              </button>
+            )}
+
+            {/* Move Back button */}
+            <button
+              onClick={() => {
+                const uni = selectedShortlistUni
+                setSelectedShortlistUni(null)
+                removeFromShortlist(uni.id)
+              }}
+              style={{
+                width:'100%', padding:'0.85rem', borderRadius:50,
+                fontWeight:700, fontSize:'1rem', cursor:'pointer',
+                border:'2px solid #e5e7eb', fontFamily:'DM Sans, sans-serif',
+                background:'#fff', color:'#6b7280',
+                transition:'all 0.2s'
+              }}>
+              ↩ Move Back to Queue
+            </button>
+          </div>
         </div>
       )}
 
