@@ -19,6 +19,9 @@ function DashboardPage() {
   const [qaLoading, setQALoading] = useState(true)
   const [qaInput, setQAInput] = useState('')
   const [qaFilter, setQAFilter] = useState('All')
+  const [replies, setReplies] = useState({})
+  const [replyInputs, setReplyInputs] = useState({})
+  const [showReplies, setShowReplies] = useState({})
 
   function calculateCareers(topTraits) {
     const careerDatabase = [
@@ -94,6 +97,31 @@ function DashboardPage() {
           loadingAI: false
         })))
       }
+
+      // Fetch all replies
+      const { data: repliesData } = await supabase
+        .from('question_replies')
+        .select('*')
+        .order('created_at', { ascending: true })
+
+      if (repliesData) {
+        const grouped = {}
+        repliesData.forEach(r => {
+          if (!grouped[r.question_id]) grouped[r.question_id] = []
+          grouped[r.question_id].push({
+            id: r.id,
+            text: r.reply,
+            name: r.user_id === user.id ? 'You' : 'Student',
+            time: new Date(r.created_at).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric'
+            }),
+            isMine: r.user_id === user.id,
+            userId: r.user_id
+          })
+        })
+        setReplies(grouped)
+      }
+
       setQALoading(false)
     }
 
@@ -258,6 +286,57 @@ function DashboardPage() {
 
     if (!error) {
       setQAItems(prev => prev.filter(q => q.id !== itemId))
+    }
+  }
+
+  const postReply = async (questionId) => {
+    const text = replyInputs[questionId]?.trim()
+    if (!text || !user) return
+
+    const { data, error } = await supabase
+      .from('question_replies')
+      .insert({
+        question_id: questionId,
+        user_id: user.id,
+        reply: text
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Reply error:', error)
+      return
+    }
+
+    if (data) {
+      const newReply = {
+        id: data.id,
+        text: data.reply,
+        name: 'You',
+        time: 'Just now',
+        isMine: true,
+        userId: user.id
+      }
+      setReplies(prev => ({
+        ...prev,
+        [questionId]: [...(prev[questionId] || []), newReply]
+      }))
+      setReplyInputs(prev => ({ ...prev, [questionId]: '' }))
+    }
+  }
+
+  const deleteReply = async (replyId, questionId) => {
+    const { error } = await supabase
+      .from('question_replies')
+      .delete()
+      .eq('id', replyId)
+      .eq('user_id', user.id)
+
+    if (!error) {
+      setReplies(prev => ({
+        ...prev,
+        [questionId]: prev[questionId].filter(r => r.id !== replyId)
+      }))
     }
   }
 
@@ -622,7 +701,149 @@ function DashboardPage() {
                           🗑️ Delete
                         </button>
                       )}
+                      <button
+                        onClick={() => setShowReplies(prev => ({
+                          ...prev,
+                          [item.id]: !prev[item.id]
+                        }))}
+                        style={{
+                          background: 'none',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 50,
+                          padding: '0.25rem 0.7rem',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          color: '#6b7280',
+                          fontFamily: 'DM Sans, sans-serif'
+                        }}
+                      >
+                        💬 {replies[item.id]?.length || 0} Replies
+                      </button>
                     </div>
+
+                    {showReplies[item.id] && (
+                      <div style={{
+                        marginTop: '0.8rem',
+                        paddingTop: '0.8rem',
+                        borderTop: '1px solid #f3f4f6'
+                      }}>
+                        {(replies[item.id] || []).map(reply => (
+                          <div key={reply.id} style={{
+                            display: 'flex',
+                            gap: '0.6rem',
+                            marginBottom: '0.6rem',
+                            alignItems: 'flex-start'
+                          }}>
+                            <div style={{
+                              width: 28, height: 28, borderRadius: '50%',
+                              background: reply.isMine ? '#0d9488' : '#e5e7eb',
+                              color: reply.isMine ? '#fff' : '#6b7280',
+                              display: 'flex', alignItems: 'center',
+                              justifyContent: 'center', fontSize: '0.7rem',
+                              fontWeight: 700, flexShrink: 0
+                            }}>
+                              {reply.name.charAt(0)}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: '0.2rem'
+                              }}>
+                                <span style={{
+                                  fontSize: '0.78rem',
+                                  fontWeight: 700,
+                                  color: '#374151'
+                                }}>
+                                  {reply.name}
+                                </span>
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem'
+                                }}>
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    color: '#9ca3af'
+                                  }}>
+                                    {reply.time}
+                                  </span>
+                                  {reply.isMine && (
+                                    <button
+                                      onClick={() => deleteReply(reply.id, item.id)}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#ef4444',
+                                        cursor: 'pointer',
+                                        fontSize: '0.72rem',
+                                        padding: 0
+                                      }}
+                                    >
+                                      🗑️
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <p style={{
+                                fontSize: '0.85rem',
+                                color: '#374151',
+                                margin: 0,
+                                lineHeight: 1.4
+                              }}>
+                                {reply.text}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+
+                        <div style={{
+                          display: 'flex',
+                          gap: '0.5rem',
+                          marginTop: '0.6rem'
+                        }}>
+                          <input
+                            value={replyInputs[item.id] || ''}
+                            onChange={e => setReplyInputs(prev => ({
+                              ...prev,
+                              [item.id]: e.target.value
+                            }))}
+                            onKeyDown={e => e.key === 'Enter' && postReply(item.id)}
+                            placeholder="Write a reply..."
+                            style={{
+                              flex: 1,
+                              border: '1.5px solid #e5e7eb',
+                              borderRadius: 50,
+                              padding: '0.4rem 0.8rem',
+                              fontSize: '0.82rem',
+                              fontFamily: 'DM Sans, sans-serif',
+                              outline: 'none'
+                            }}
+                            onFocus={e => e.target.style.borderColor = '#0d9488'}
+                            onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+                          />
+                          <button
+                            onClick={() => postReply(item.id)}
+                            style={{
+                              background: '#0d9488',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 50,
+                              padding: '0.4rem 0.9rem',
+                              fontSize: '0.82rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              fontFamily: 'DM Sans, sans-serif',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            Reply →
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
