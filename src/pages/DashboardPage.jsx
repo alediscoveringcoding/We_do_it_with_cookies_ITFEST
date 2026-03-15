@@ -3,30 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import supabase from '../api/supabaseClient'
 
-const initialQA = [
-  {
-    id: 1, avatar: 'A', name: 'Alex K.', time: '2 days ago', tag: 'UX Research',
-    question: 'What degree do I need to become a UX Researcher?',
-    answer: "UX Research doesn't require a specific degree — many researchers come from psychology, human-computer interaction, or even English. What matters most is a portfolio of research projects, familiarity with usability testing methods, and tools like Figma or Maze. Many UX researchers enter through bootcamps or self-study.",
-    upvotes: 12, voted: false, loadingAI: false, isMine: true,
-  },
-  {
-    id: 2, avatar: 'M', name: 'Maya R.', time: '3 days ago', tag: 'Data Science',
-    question: 'Is data science still a good career path in 2026 with AI taking over?',
-    answer: null, upvotes: 8, voted: false, loadingAI: false, isMine: false,
-  },
-  {
-    id: 3, avatar: 'J', name: 'Jamie L.', time: '5 days ago', tag: 'Graphic Design',
-    question: 'How do I build a portfolio as a graphic design student with no clients?',
-    answer: null, upvotes: 21, voted: false, loadingAI: false, isMine: false,
-  },
-]
-
-const aiAnswers = {
-  2: "Great question! This is a nuanced topic. The short answer is: skilled data scientists who understand how to work with AI are in higher demand than ever. Focus on developing domain expertise alongside AI literacy — understanding business problems and knowing when to apply which model matters far more than just coding. Data science roles are evolving, not disappearing.",
-  3: "Start with spec work — redesign an existing brand, create a concept for a local business, or reimagine a well-known app. Platforms like Dribbble, Behance, and even Instagram are great for showcasing your work. Consider entering student design competitions or contributing to open-source projects that need visual assets. Quality over quantity — 4 strong pieces beat 20 average ones.",
-}
-
 function DashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -39,10 +15,10 @@ function DashboardPage() {
   const [careers, setCareers] = useState([])
   const [recommendedSkills, setRecommendedSkills] = useState([])
   const [savedCareers, setSavedCareers] = useState(new Set(['UX Researcher']))
-  const [qaItems, setQAItems] = useState(initialQA)
+  const [qaItems, setQAItems] = useState([])
+  const [qaLoading, setQALoading] = useState(true)
   const [qaInput, setQAInput] = useState('')
   const [qaFilter, setQAFilter] = useState('All')
-  const [nextId, setNextId] = useState(100)
 
   function calculateCareers(topTraits) {
     const careerDatabase = [
@@ -92,6 +68,34 @@ function DashboardPage() {
 
   useEffect(() => {
     if (!user) return
+
+    async function fetchQuestions() {
+      setQALoading(true)
+      const { data } = await supabase
+        .from('questions')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (data) {
+        setQAItems(data.map(q => ({
+          id: q.id,
+          name: q.user_id === user.id ? 'You' : 'Student',
+          avatar: q.user_id === user.id ? '👤' : '🧑‍🎓',
+          question: q.question,
+          answer: q.ai_answer || null,
+          upvotes: q.upvotes || 0,
+          voted: false,
+          tag: q.career_tag || 'General',
+          time: new Date(q.created_at).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric'
+          }),
+          isMine: q.user_id === user.id,
+          loadingAI: false,
+          dbId: q.id
+        })))
+      }
+      setQALoading(false)
+    }
 
     async function loadData() {
       // Fetch latest assessment
@@ -165,6 +169,7 @@ function DashboardPage() {
     }
 
     loadData()
+    fetchQuestions()
   }, [user])
 
   function toggleSave(title) {
@@ -176,41 +181,78 @@ function DashboardPage() {
     })
   }
 
-  function upvote(id) {
+  const upvote = async (id) => {
+    const item = qaItems.find(q => q.id === id)
+    if (!item) return
+
+    const newVoted = !item.voted
+    const newUpvotes = newVoted ? item.upvotes + 1 : item.upvotes - 1
+
+    // Update local state immediately
     setQAItems(prev => prev.map(q =>
-      q.id === id ? { ...q, upvotes: q.voted ? q.upvotes - 1 : q.upvotes + 1, voted: !q.voted } : q
+      q.id === id
+        ? { ...q, voted: newVoted, upvotes: newUpvotes }
+        : q
     ))
+
+    // Save to Supabase
+    await supabase
+      .from('questions')
+      .update({ upvotes: newUpvotes })
+      .eq('id', id)
   }
 
-  function postQuestion() {
+  const postQuestion = async () => {
     if (!qaInput.trim()) return
-    const newItem = {
-      id: nextId,
-      avatar: 'A',
-      name: 'Alex K.',
-      time: 'Just now',
-      tag: 'Career',
-      question: qaInput,
-      answer: null,
-      upvotes: 0,
-      voted: false,
-      loadingAI: false,
-      isMine: true,
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from('questions')
+      .insert({
+        user_id: user.id,
+        question: qaInput.trim(),
+        career_tag: 'General',
+        upvotes: 0,
+        ai_answer: null
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error posting question:', error)
+      return
     }
-    setQAItems(prev => [newItem, ...prev])
-    setQAInput('')
-    setNextId(n => n + 1)
+
+    if (data) {
+      const newItem = {
+        id: data.id,
+        name: 'You',
+        avatar: '👤',
+        question: data.question,
+        answer: null,
+        upvotes: 0,
+        voted: false,
+        tag: data.career_tag || 'General',
+        time: 'Just now',
+        isMine: true,
+        loadingAI: false,
+        dbId: data.id
+      }
+      setQAItems(prev => [newItem, ...prev])
+      setQAInput('')
+    }
   }
 
-  function getAIAnswer(id) {
-    setQAItems(prev => prev.map(q => q.id === id ? { ...q, loadingAI: true } : q))
-    setTimeout(() => {
-      setQAItems(prev => prev.map(q => {
-        if (q.id !== id) return q
-        const answer = aiAnswers[id] || "Great question! This is a nuanced topic. The key is to build relevant skills, gain hands-on experience through internships or projects, and connect with professionals in your target field. Networking and continuous learning are the most consistent drivers of career success regardless of the specific path you choose."
-        return { ...q, loadingAI: false, answer }
-      }))
-    }, 1800)
+  const deleteQuestion = async (itemId) => {
+    const { error } = await supabase
+      .from('questions')
+      .delete()
+      .eq('id', itemId)
+      .eq('user_id', user.id)
+
+    if (!error) {
+      setQAItems(prev => prev.filter(q => q.id !== itemId))
+    }
   }
 
   const filteredQA = qaFilter === 'My Questions' ? qaItems.filter(q => q.isMine)
@@ -505,46 +547,78 @@ function DashboardPage() {
               ))}
             </div>
             <div className="qa-feed">
-              {filteredQA.map(item => (
-                <div className="qa-item" key={item.id}>
-                  <div className="qa-header">
-                    <div className="qa-avatar">{item.avatar}</div>
-                    <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{item.name}</div>
-                      <div className="qa-meta">{item.time}</div>
-                    </div>
-                    <span className="qa-career-tag">{item.tag}</span>
-                  </div>
-                  <div className="qa-question">{item.question}</div>
-                  {item.answer && (
-                    <div className="qa-answer">
-                      <div className="qa-answer-label">🤖 AI Answer</div>
-                      {item.answer}
-                    </div>
-                  )}
-                  <div className="qa-actions">
-                    <button
-                      className={`upvote-btn ${item.voted ? 'voted' : ''}`}
-                      onClick={() => upvote(item.id)}
-                    >
-                      ▲ {item.upvotes}
-                    </button>
-                    {!item.answer && (
-                      <button
-                        className="ai-btn"
-                        disabled={item.loadingAI}
-                        onClick={() => getAIAnswer(item.id)}
-                      >
-                        {item.loadingAI ? '⏳ Thinking…' : '✨ Get AI Answer'}
-                      </button>
-                    )}
-                  </div>
+              {qaLoading ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2rem',
+                  color: '#6b7280',
+                  fontSize: '0.9rem'
+                }}>
+                  Loading questions...
                 </div>
-              ))}
-              {filteredQA.length === 0 && (
-                <p style={{ color: 'var(--soft)', fontSize: '0.88rem', textAlign: 'center', padding: '1rem 0' }}>
-                  No questions in this category yet.
-                </p>
+              ) : filteredQA.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2rem',
+                  color: '#9ca3af',
+                  fontSize: '0.9rem'
+                }}>
+                  No questions yet. Be the first to ask! 💬
+                </div>
+              ) : (
+                filteredQA.map(item => (
+                  <div className="qa-item" key={item.id}>
+                    <div className="qa-header">
+                      <div className="qa-avatar">{item.avatar}</div>
+                      <div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 600 }}>{item.name}</div>
+                        <div className="qa-meta">{item.time}</div>
+                      </div>
+                      <span className="qa-career-tag">{item.tag}</span>
+                    </div>
+                    <div className="qa-question">{item.question}</div>
+                    {item.answer && (
+                      <div className="qa-answer">
+                        <div className="qa-answer-label">🤖 AI Answer</div>
+                        {item.answer}
+                      </div>
+                    )}
+                    <div className="qa-actions">
+                      <button
+                        className={`upvote-btn ${item.voted ? 'voted' : ''}`}
+                        onClick={() => upvote(item.id)}
+                      >
+                        ▲ {item.upvotes}
+                      </button>
+                      {item.isMine && (
+                        <button
+                          onClick={() => deleteQuestion(item.id)}
+                          style={{
+                            background: 'none',
+                            border: '1px solid #fee2e2',
+                            color: '#ef4444',
+                            borderRadius: 50,
+                            padding: '0.25rem 0.7rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            fontFamily: 'DM Sans, sans-serif',
+                            transition: 'all 0.2s',
+                            marginLeft: 'auto'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = '#fee2e2'
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'none'
+                          }}
+                        >
+                          🗑️ Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
