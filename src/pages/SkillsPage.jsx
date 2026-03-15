@@ -169,7 +169,7 @@ function SkillsPage() {
                     }}>
                       🏛️ {skill.universityCount} universities offer this
                     </p>
-                    <button className="btn-sm" onClick={() => openSkillModal(skill)}>See Careers</button>
+                    <button className="btn-sm" onClick={() => openSkillModal(skill)}>See More</button>
                   </div>
                 </div>
               ))}

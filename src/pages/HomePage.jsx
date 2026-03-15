@@ -18,12 +18,12 @@ function HomePage() {
       <section className="pf-section" style={{ background: '#fff' }}>
         <div className="container text-center">
           <div className="section-tag">What We Offer</div>
-          <h2 className="section-title">Everything You Need to Find Your Career</h2>
+          <h2 className="section-title">Everything You Need to Find Your Path</h2>
           <p className="section-sub">Four powerful tools. One clear direction.</p>
           <div className="features-grid">
             <div className="feat-card" onClick={() => navigate('/assessment')}>
               <div className="feat-icon">🧭</div>
-              <h3>Career Assessment</h3>
+              <h3>Assessment</h3>
               <p>RIASEC personality quiz that maps your traits to real careers in 3 minutes.</p>
             </div>
             <div className="feat-card" onClick={() => navigate('/skills')}>

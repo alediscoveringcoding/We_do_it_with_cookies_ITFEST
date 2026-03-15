@@ -237,10 +237,10 @@ function AssessmentPage() {
         {/* INTRO */}
         {phase === 'intro' && (
           <div className="assess-intro">
-            <div className="section-tag">Career Assessment</div>
+            <div className="section-tag">Assessment</div>
             <h2 className="section-title">Discover Your RIASEC Profile</h2>
             <p className="section-sub" style={{ margin: '0 auto 1.5rem', textAlign: 'center' }}>
-              We'll map your personality across 6 dimensions to match you with careers where you'll genuinely thrive.
+              We'll map your personality across 6 dimensions to match you with a path where you'll genuinely thrive.
             </p>
             <div className="riasec-tags">
               <span className="riasec-tag">R — Realistic</span>
