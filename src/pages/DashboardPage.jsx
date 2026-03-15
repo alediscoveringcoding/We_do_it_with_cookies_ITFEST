@@ -226,7 +226,7 @@ function DashboardPage() {
         {/* Welcome Banner */}
         <div className="welcome-banner">
           <div>
-            <h2>Welcome back, Alex 👋</h2>
+            <h2>Welcome back, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Student'} 👋</h2>
             <p>Your top match: <strong>{topMatch || 'Take the assessment'}</strong> · {assessment?.created_at ? `Last assessment: ${new Date(assessment.created_at).toLocaleDateString()}` : 'No assessment yet'}</p>
           </div>
           <button className="btn-retake" onClick={() => navigate('/assessment')}>↺ Retake Assessment</button>
