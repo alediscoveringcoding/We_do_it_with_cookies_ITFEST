@@ -31,7 +31,7 @@ function Nav() {
         </li>
         <li>
           <button className={isActive('/assessment') ? 'active' : ''} onClick={() => navigate('/assessment')}>
-            Career Assessment
+            Assessment
           </button>
         </li>
         <li>

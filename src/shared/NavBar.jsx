@@ -15,7 +15,7 @@ function NavBar() {
       <div style={{ fontWeight: 600 }}>PathFinder</div>
       <div style={{ display: 'flex', gap: '1rem', fontSize: '0.95rem' }}>
         <Link to="/">Home</Link>
-        <Link to="/assessment">Career Assessment</Link>
+        <Link to="/assessment">Assessment</Link>
         <Link to="/skills">Skills</Link>
         <Link to="/dashboard">Dashboard</Link>
       </div>
