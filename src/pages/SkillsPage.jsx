@@ -1,32 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-const skillsData = [
-  { name: "Web Development", cat: "Technical", desc: "Building and maintaining websites and web apps.", careers: 18 },
-  { name: "Data Analysis", cat: "Technical", desc: "Interpreting data sets to inform decisions.", careers: 22 },
-  { name: "Machine Learning", cat: "Technical", desc: "Building models that learn from data.", careers: 14 },
-  { name: "Cloud Computing", cat: "Technical", desc: "Designing and managing cloud infrastructure.", careers: 16 },
-  { name: "Cybersecurity", cat: "Technical", desc: "Protecting systems and networks from digital attacks.", careers: 12 },
-  { name: "Graphic Design", cat: "Creative", desc: "Creating visual content for communication.", careers: 16 },
-  { name: "Creative Writing", cat: "Creative", desc: "Crafting compelling stories and content.", careers: 11 },
-  { name: "Video Production", cat: "Creative", desc: "Filming, editing, and producing video content.", careers: 9 },
-  { name: "UX/UI Design", cat: "Creative", desc: "Designing user-friendly digital experiences.", careers: 13 },
-  { name: "Photography", cat: "Creative", desc: "Capturing and editing professional images.", careers: 7 },
-  { name: "Counseling", cat: "Social", desc: "Supporting individuals through emotional challenges.", careers: 13 },
-  { name: "Teaching", cat: "Social", desc: "Educating and mentoring others effectively.", careers: 20 },
-  { name: "Public Speaking", cat: "Social", desc: "Delivering compelling presentations to audiences.", careers: 25 },
-  { name: "Social Work", cat: "Social", desc: "Helping communities and vulnerable populations thrive.", careers: 10 },
-  { name: "Critical Thinking", cat: "Analytical", desc: "Evaluating information to solve complex problems.", careers: 30 },
-  { name: "Financial Modeling", cat: "Analytical", desc: "Building models to project financial outcomes.", careers: 12 },
-  { name: "Research Methods", cat: "Analytical", desc: "Designing and executing scientific research.", careers: 17 },
-  { name: "Statistics", cat: "Analytical", desc: "Applying statistical methods to interpret data.", careers: 15 },
-  { name: "Project Management", cat: "Leadership", desc: "Planning and executing projects from start to finish.", careers: 28 },
-  { name: "Team Leadership", cat: "Leadership", desc: "Motivating and directing teams toward goals.", careers: 24 },
-  { name: "Strategic Planning", cat: "Leadership", desc: "Setting long-term goals and action plans.", careers: 19 },
-  { name: "Electrical Work", cat: "Trades", desc: "Installing and maintaining electrical systems.", careers: 8 },
-  { name: "Welding", cat: "Trades", desc: "Joining metal components using heat and pressure.", careers: 6 },
-  { name: "HVAC Systems", cat: "Trades", desc: "Installing heating, ventilation, and cooling systems.", careers: 7 },
-]
+import { supabase } from '../api/supabaseClient'
 
 const badgeClass = {
   Technical: "badge-technical",
@@ -50,10 +24,109 @@ const categoryEmojis = {
 
 function SkillsPage() {
   const navigate = useNavigate()
+  const [skills, setSkills] = useState([])
+  const [filteredSkills, setFilteredSkills] = useState([])
   const [filter, setFilter] = useState('all')
   const [modalSkill, setModalSkill] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [relatedUniversities, setRelatedUniversities] = useState([])
+  const [modalLoading, setModalLoading] = useState(false)
 
-  const filtered = filter === 'all' ? skillsData : skillsData.filter(s => s.cat === filter)
+  // Fetch skills on mount
+  useEffect(() => {
+    async function fetchSkills() {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('skills')
+        .select(`
+          id,
+          name,
+          category,
+          description,
+          riasec_tags,
+          skill_universities(university_id)
+        `)
+        .order('name')
+
+      if (error) {
+        console.error('Error fetching skills:', error)
+        setLoading(false)
+        return
+      }
+
+      if (data) {
+        const withCount = data.map(s => ({
+          ...s,
+          universityCount: s.skill_universities?.length || 0
+        }))
+        setSkills(withCount)
+        setFilteredSkills(withCount)
+      }
+      setLoading(false)
+    }
+    fetchSkills()
+  }, [])
+
+  // Filter when filter or skills change
+  useEffect(() => {
+    if (filter === 'all') {
+      setFilteredSkills(skills)
+    } else {
+      setFilteredSkills(
+        skills.filter(s => s.category === filter)
+      )
+    }
+  }, [filter, skills])
+
+  // Open skill modal and fetch universities
+  async function openSkillModal(skill) {
+    setModalSkill(skill)
+    setModalLoading(true)
+    setRelatedUniversities([])
+
+    const { data, error } = await supabase
+      .from('skill_universities')
+      .select('universities(*)')
+      .eq('skill_id', skill.id)
+
+    if (error) {
+      console.error('Error fetching universities:', error)
+      setModalLoading(false)
+      return
+    }
+
+    if (data) {
+      setRelatedUniversities(
+        data.map(d => d.universities).filter(Boolean)
+      )
+    }
+    setModalLoading(false)
+  }
+
+  // Show loading spinner
+  if (loading) return (
+    <div className="pf-page">
+      <section className="pf-section">
+        <div className="container" style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh'
+        }}>
+          <div style={{
+            width: 36,
+            height: 36,
+            border: '4px solid #0d9488',
+            borderTopColor: 'transparent',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite'
+          }} />
+        </div>
+      </section>
+    </div>
+  )
+
+  const filtered = filteredSkills
 
   return (
     <div className="pf-page">
@@ -82,13 +155,13 @@ function SkillsPage() {
 
             <div className="skills-grid">
               {filtered.map((skill) => (
-                <div className="skill-card" key={skill.name}>
-                  <span className={`skill-cat-badge ${badgeClass[skill.cat]}`}>{skill.cat}</span>
+                <div className="skill-card" key={skill.id}>
+                  <span className={`skill-cat-badge ${badgeClass[skill.category]}`}>{skill.category}</span>
                   <h3>{skill.name}</h3>
-                  <p>{skill.desc}</p>
+                  <p>{skill.description}</p>
                   <div className="skill-card-footer">
-                    <span className="careers-count">↗ {skill.careers} careers use this</span>
-                    <button className="btn-sm" onClick={() => setModalSkill(skill)}>See Careers</button>
+                    <span className="careers-count">🏛️ {skill.universityCount} universities offer this</span>
+                    <button className="btn-sm" onClick={() => openSkillModal(skill)}>See Careers</button>
                   </div>
                 </div>
               ))}
@@ -103,24 +176,151 @@ function SkillsPage() {
           <button className="modal-close" onClick={() => setModalSkill(null)}>✕</button>
           {modalSkill && (
             <div>
-              <span className={`skill-cat-badge ${badgeClass[modalSkill.cat]}`} style={{ marginBottom: '0.8rem', display: 'inline-block' }}>
-                {modalSkill.cat}
+              <span className={`skill-cat-badge ${badgeClass[modalSkill.category]}`} style={{ marginBottom: '0.8rem', display: 'inline-block' }}>
+                {modalSkill.category}
               </span>
               <h2>{modalSkill.name}</h2>
               <p className="modal-desc">
-                {modalSkill.desc} This skill connects to <strong>{modalSkill.careers} careers</strong> in our database.
+                {modalSkill.description}
               </p>
-              <h4 style={{ fontSize: '0.88rem', fontWeight: 700, marginBottom: '0.8rem', color: 'var(--soft)' }}>
-                PEOPLE WHO USE THIS SKILL
-              </h4>
-              <div className="testimonial-block">
-                <p>"This skill opens doors across multiple industries. Learn it well, and opportunities follow."</p>
-                <span>— Career Coach</span>
-              </div>
-              <div className="testimonial-block">
-                <p>"Mastering this skill was the best career investment I made in my education."</p>
-                <span>— Industry Professional</span>
-              </div>
+
+              {/* Loading state */}
+              {modalLoading && (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2rem',
+                  color: '#6b7280'
+                }}>
+                  <p>Finding universities... 🏛️</p>
+                </div>
+              )}
+
+              {/* Universities list */}
+              {!modalLoading && relatedUniversities.length > 0 && (
+                <div>
+                  <h4 style={{
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    color: '#9ca3af',
+                    marginBottom: '0.5rem'
+                  }}>
+                    🏛️ Universities Where You Can Study This
+                  </h4>
+                  <p style={{
+                    color: '#6b7280',
+                    fontSize: '0.85rem',
+                    marginBottom: '1.2rem'
+                  }}>
+                    These universities have strong programs related to {modalSkill?.name}
+                  </p>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                    gap: '0.8rem',
+                    maxHeight: '400px',
+                    overflowY: 'auto'
+                  }}>
+                    {relatedUniversities.map(uni => (
+                      <div key={uni.id} style={{
+                        background: '#f9fafb',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 12,
+                        padding: '1rem',
+                        transition: 'all 0.2s'
+                      }}>
+                        {/* Type + City */}
+                        <div style={{
+                          display: 'flex',
+                          gap: '0.4rem',
+                          marginBottom: '0.5rem',
+                          flexWrap: 'wrap'
+                        }}>
+                          <span style={{
+                            background: '#f3f4f6',
+                            color: '#374151',
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: 50
+                          }}>
+                            {uni.type}
+                          </span>
+                          <span style={{
+                            color: '#9ca3af',
+                            fontSize: '0.75rem'
+                          }}>
+                            📍 {uni.city}
+                          </span>
+                        </div>
+
+                        {/* Name */}
+                        <div style={{
+                          fontWeight: 700,
+                          fontSize: '0.88rem',
+                          marginBottom: '0.4rem',
+                          color: '#1a1a2e',
+                          lineHeight: 1.3
+                        }}>
+                          {uni.name}
+                        </div>
+
+                        {/* Description */}
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: '#6b7280',
+                          marginBottom: '0.8rem',
+                          lineHeight: 1.4,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}>
+                          {uni.description}
+                        </p>
+
+                        {/* Visit Website button */}
+                        <button
+                          onClick={() => {
+                            if (uni.website) window.open(uni.website, '_blank')
+                          }}
+                          disabled={!uni.website}
+                          style={{
+                            width: '100%',
+                            padding: '0.4rem',
+                            borderRadius: 50,
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: uni.website ? 'pointer' : 'default',
+                            background: uni.website ? '#0d9488' : '#e5e7eb',
+                            color: uni.website ? '#fff' : '#9ca3af',
+                            border: 'none',
+                            fontFamily: 'DM Sans, sans-serif',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {uni.website ? 'Visit Website →' : 'No Website'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {!modalLoading && relatedUniversities.length === 0 && (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '2rem',
+                  background: '#f9fafb',
+                  borderRadius: 12,
+                  color: '#9ca3af',
+                  fontSize: '0.9rem'
+                }}>
+                  No universities linked to this skill yet.
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -290,6 +290,12 @@ body.pf-body {
 /* Radar chart wrapper */
 .radar-wrap { background: var(--teal-pale); border: 2px dashed var(--teal); border-radius: 20px; padding: 1.5rem; margin-bottom: 2rem; display: flex; justify-content: center; }
 
+/* Loading spinner animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 @media (max-width: 900px) {
   .features-grid { grid-template-columns: repeat(2, 1fr); }
   .skills-layout { grid-template-columns: 1fr; }
