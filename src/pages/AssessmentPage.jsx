@@ -3,6 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import supabase from '../api/supabaseClient'
 
+function getMatchScore(uniTags, topTraits, dominantTrait) {
+  if (!Array.isArray(uniTags)) return 0
+  const overlapCount = uniTags.filter(tag => 
+    topTraits.includes(tag)
+  ).length
+  const dominantBonus = uniTags.includes(dominantTrait) ? 1 : 0
+  return overlapCount + dominantBonus
+}
+
+function isQualifiedMatch(uniTags, topTraits) {
+  if (!Array.isArray(uniTags)) return false
+  return uniTags.filter(tag => topTraits.includes(tag)).length >= 2
+}
+
 const questions = [
   { text: "I enjoy taking apart machines or gadgets to see how they work.", riasec: "R" },
   { text: "I like doing research and analyzing information to solve problems.", riasec: "I" },
@@ -75,18 +89,20 @@ function AssessmentPage() {
 
     try {
       // Step 1: Get top 3 traits from scores
-      const sortedTraits = Object.entries(finalScores)
+      const sortedEntries = Object.entries(finalScores)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([key]) => key)
 
-      console.log('Top traits:', sortedTraits)
+      const topTraitsArray = sortedEntries.slice(0, 3).map(([key]) => key)
+      const dominantTrait = topTraitsArray[0]
+
+      console.log('Top traits:', topTraitsArray)
+      console.log('Dominant trait:', dominantTrait)
 
       // Step 2: Save assessment
       await supabase.from('assessments').insert({
         user_id: user.id,
         riasec_scores: finalScores,
-        top_traits: sortedTraits
+        top_traits: topTraitsArray
       })
 
       // Step 3: Fetch ALL 80 universities with their tags
@@ -100,20 +116,19 @@ function AssessmentPage() {
         return
       }
 
-      // Step 4: Use IDENTICAL filter logic as DiscoverPage
-      // This guarantees same result as "Matched For You" on Discover
-      const matchedIds = allUnis
-        .filter(uni =>
-          Array.isArray(uni.riasec_tags) &&
-          uni.riasec_tags.some(tag => sortedTraits.includes(tag))
+      // Step 4: Filter with >= 2 matching traits AND sort by match score
+      const matched = (allUnis || [])
+        .filter(uni => isQualifiedMatch(uni.riasec_tags, topTraitsArray))
+        .sort((a, b) => 
+          getMatchScore(b.riasec_tags, topTraitsArray, dominantTrait) -
+          getMatchScore(a.riasec_tags, topTraitsArray, dominantTrait)
         )
-        .map(uni => uni.id)
+
+      const matchedIds = matched.map(uni => uni.id)
 
       console.log('Matched IDs count:', matchedIds.length)
-      // This number must match what Discover shows (e.g. 68)
 
       // Step 5: Insert ALL matched IDs via server-side RPC function
-      // This runs as a single SQL transaction — no timeouts, no partial inserts
       const { error: rpcError } = await supabase.rpc(
         'insert_university_matches',
         {

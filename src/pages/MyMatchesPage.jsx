@@ -3,15 +3,49 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import supabase from '../api/supabaseClient'
 
+function getMatchScore(uniTags, topTraits, dominantTrait) {
+  if (!Array.isArray(uniTags)) return 0
+  const overlapCount = uniTags.filter(tag => 
+    topTraits.includes(tag)
+  ).length
+  const dominantBonus = uniTags.includes(dominantTrait) ? 1 : 0
+  return overlapCount + dominantBonus
+}
+
+function isQualifiedMatch(uniTags, topTraits) {
+  if (!Array.isArray(uniTags)) return false
+  return uniTags.filter(tag => topTraits.includes(tag)).length >= 2
+}
+
 export default function MyMatchesPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [savedUniversities, setSavedUniversities] = useState([])
+  const [userTraits, setUserTraits] = useState([])
+  const [dominantTrait, setDominantTrait] = useState('')
   const [loading, setLoading] = useState(true)
   const [currentSwipeIndex, setCurrentSwipeIndex] = useState(0)
   const [swipeAnimation, setSwipeAnimation] = useState(null)
   // swipeAnimation = 'left' | 'right' | null
   const [selectedShortlistUni, setSelectedShortlistUni] = useState(null)
+
+  // Fetch user traits first
+  useEffect(() => {
+    if (!user) return
+    supabase
+      .from('assessments')
+      .select('top_traits')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+      .then(({ data }) => {
+        if (data?.top_traits) {
+          setUserTraits(data.top_traits)
+          setDominantTrait(data.top_traits[0] || '')
+        }
+      })
+  }, [user])
 
   // Fetch all saved universities (choice = 'yes')
   useEffect(() => {
@@ -27,7 +61,19 @@ export default function MyMatchesPage() {
       .eq('user_id', user.id)
       .eq('choice', 'yes')
       .order('created_at', { ascending: true })
-    setSavedUniversities(data || [])
+    
+    // Sort by match score (best matches first)
+    setSavedUniversities(
+      (data || []).sort((a, b) => {
+        const scoreA = getMatchScore(
+          a.universities?.riasec_tags, userTraits, dominantTrait
+        )
+        const scoreB = getMatchScore(
+          b.universities?.riasec_tags, userTraits, dominantTrait
+        )
+        return scoreB - scoreA
+      })
+    )
     setLoading(false)
   }
 
@@ -343,6 +389,29 @@ export default function MyMatchesPage() {
                     </span>
                   ))}
                 </div>
+
+                {/* Match quality badge */}
+                {(() => {
+                  const score = getMatchScore(
+                    currentCard.universities?.riasec_tags,
+                    userTraits,
+                    dominantTrait
+                  )
+                  return (
+                    <div style={{
+                      display: 'inline-block',
+                      background: score === 4 ? '#d1fae5' : score === 3 ? '#dbeafe' : '#fef3c7',
+                      color: score === 4 ? '#065f46' : score === 3 ? '#1d4ed8' : '#92400e',
+                      fontSize: '0.75rem', fontWeight: 700,
+                      padding: '0.25rem 0.8rem', borderRadius: 50,
+                      marginTop: '0.5rem', marginBottom: '0.75rem'
+                    }}>
+                      {score === 4 ? '⭐ Perfect Match'
+                        : score === 3 ? '✓ Strong Match'
+                        : '✓ Good Match'}
+                    </div>
+                  )
+                })()}
 
                 {/* Description */}
                 <p style={{ color:'#6b7280', fontSize:'0.95rem',

@@ -2,6 +2,20 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import supabase from '../api/supabaseClient'
 
+function getMatchScore(uniTags, topTraits, dominantTrait) {
+  if (!Array.isArray(uniTags)) return 0
+  const overlapCount = uniTags.filter(tag => 
+    topTraits.includes(tag)
+  ).length
+  const dominantBonus = uniTags.includes(dominantTrait) ? 1 : 0
+  return overlapCount + dominantBonus
+}
+
+function isQualifiedMatch(uniTags, topTraits) {
+  if (!Array.isArray(uniTags)) return false
+  return uniTags.filter(tag => topTraits.includes(tag)).length >= 2
+}
+
 export default function DiscoverPage() {
   const { user } = useAuth()
   const [universities, setUniversities] = useState([])
@@ -11,6 +25,7 @@ export default function DiscoverPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedType, setSelectedType] = useState('all')
   const [userTraits, setUserTraits] = useState([])
+  const [dominantTrait, setDominantTrait] = useState('')
   const [savedIds, setSavedIds] = useState([])
   const [selectedUniversity, setSelectedUniversity] = useState(null)
 
@@ -19,13 +34,16 @@ export default function DiscoverPage() {
     if (!user) return
     supabase
       .from('assessments')
-      .select('top_traits')
+      .select('top_traits, riasec_scores')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
       .then(({ data }) => {
-        if (data?.top_traits) setUserTraits(data.top_traits)
+        if (data?.top_traits) {
+          setUserTraits(data.top_traits)
+          setDominantTrait(data.top_traits[0])
+        }
       })
   }, [user])
 
@@ -59,9 +77,12 @@ export default function DiscoverPage() {
     let result = [...universities]
 
     if (viewMode === 'matched' && userTraits.length > 0) {
-      result = result.filter(uni =>
-        uni.riasec_tags?.some(tag => userTraits.includes(tag))
-      )
+      result = result
+        .filter(uni => isQualifiedMatch(uni.riasec_tags, userTraits))
+        .sort((a, b) =>
+          getMatchScore(b.riasec_tags, userTraits, dominantTrait) -
+          getMatchScore(a.riasec_tags, userTraits, dominantTrait)
+        )
     }
 
     if (searchQuery.trim()) {
@@ -79,7 +100,7 @@ export default function DiscoverPage() {
     }
 
     setFilteredUniversities(result)
-  }, [universities, viewMode, searchQuery, selectedType, userTraits])
+  }, [universities, viewMode, searchQuery, selectedType, userTraits, dominantTrait])
 
   // Save / unsave university
   async function toggleSave(universityId) {
@@ -105,7 +126,7 @@ export default function DiscoverPage() {
   }
 
   const matchedCount = universities.filter(uni =>
-    uni.riasec_tags?.some(tag => userTraits.includes(tag))
+    isQualifiedMatch(uni.riasec_tags, userTraits)
   ).length
 
   const typeOptions = [
@@ -261,7 +282,7 @@ export default function DiscoverPage() {
         {filteredUniversities.map(uni => {
           const isSaved = savedIds.includes(uni.id)
           const isMatch = userTraits.length > 0 &&
-            uni.riasec_tags?.some(tag => userTraits.includes(tag))
+            isQualifiedMatch(uni.riasec_tags, userTraits)
           const typeColor = typeColors[uni.type] || typeColors.Private
 
           return (
@@ -297,7 +318,11 @@ export default function DiscoverPage() {
                   fontSize:'0.7rem', fontWeight:700,
                   padding:'0.15rem 0.6rem', borderRadius:50
                 }}>
-                  ✓ Matches you
+                  {getMatchScore(uni.riasec_tags, userTraits, dominantTrait) === 4
+                    ? '⭐ Perfect Match'
+                    : getMatchScore(uni.riasec_tags, userTraits, dominantTrait) === 3
+                    ? '✓ Strong Match'
+                    : '✓ Good Match'}
                 </div>
               )}
 
