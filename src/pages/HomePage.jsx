@@ -6,7 +6,7 @@ function HomePage() {
     <div className="pf-page">
       {/* HERO */}
       <div className="pf-hero">
-        <h1>Shape Your Career<br /><em>With Confidence</em></h1>
+        <h1>Shape Your Choice<br /><em>With Confidence</em></h1>
         <p>Take a personality-based assessment, explore real careers, and get a personalized roadmap built around who you are.</p>
         <div className="hero-btns">
           <button className="btn-teal" onClick={() => navigate('/assessment')}>Start Assessment</button>

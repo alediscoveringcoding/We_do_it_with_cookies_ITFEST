@@ -95,7 +95,7 @@ function LoginPage() {
       <div className="login-wrap">
         <div className="login-card">
           <div className="login-logo">PathFinder</div>
-          <div className="login-tagline">Shape your career with confidence</div>
+          <div className="login-tagline">Shape your choice with confidence</div>
 
           <div className="login-tabs">
             <button
