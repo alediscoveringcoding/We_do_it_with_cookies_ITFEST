@@ -159,8 +159,16 @@ function SkillsPage() {
                   <span className={`skill-cat-badge ${badgeClass[skill.category]}`}>{skill.category}</span>
                   <h3>{skill.name}</h3>
                   <p>{skill.description}</p>
-                  <div className="skill-card-footer">
-                    <span className="careers-count">🏛️ {skill.universityCount} universities offer this</span>
+                  <div className="skill-card-footer" style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <p style={{
+                      textAlign: 'center',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      color: '#0d9488',
+                      margin: 0
+                    }}>
+                      🏛️ {skill.universityCount} universities offer this
+                    </p>
                     <button className="btn-sm" onClick={() => openSkillModal(skill)}>See Careers</button>
                   </div>
                 </div>
