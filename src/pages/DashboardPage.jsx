@@ -3,15 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import supabase from '../api/supabaseClient'
 
-const careers = [
-  { pct: '91%', title: 'UX Researcher', salary: '$72k – $115k/yr', saved: true },
-  { pct: '87%', title: 'Data Scientist', salary: '$90k – $150k/yr', saved: false },
-  { pct: '83%', title: 'Product Manager', salary: '$95k – $160k/yr', saved: false },
-  { pct: '79%', title: 'Graphic Designer', salary: '$50k – $90k/yr', saved: false },
-  { pct: '74%', title: 'Marketing Strategist', salary: '$60k – $105k/yr', saved: false },
-  { pct: '70%', title: 'Software Engineer', salary: '$100k – $180k/yr', saved: false },
-]
-
 const initialQA = [
   {
     id: 1, avatar: 'A', name: 'Alex K.', time: '2 days ago', tag: 'UX Research',
@@ -43,29 +34,92 @@ function DashboardPage() {
   const [matches, setMatches] = useState([])
   const [matchCount, setMatchCount] = useState(0)
   const [shortlistCount, setShortlistCount] = useState(0)
+  const [assessmentCount, setAssessmentCount] = useState(0)
+  const [topMatch, setTopMatch] = useState('')
+  const [careers, setCareers] = useState([])
+  const [recommendedSkills, setRecommendedSkills] = useState([])
   const [savedCareers, setSavedCareers] = useState(new Set(['UX Researcher']))
   const [qaItems, setQAItems] = useState(initialQA)
   const [qaInput, setQAInput] = useState('')
   const [qaFilter, setQAFilter] = useState('All')
   const [nextId, setNextId] = useState(100)
 
+  function calculateCareers(topTraits) {
+    const careerDatabase = [
+      { title: 'Software Engineer', riasec: ['R','I'], salary: '$90K–$150K' },
+      { title: 'UX Researcher', riasec: ['I','A','S'], salary: '$80K–$130K' },
+      { title: 'Data Scientist', riasec: ['I','C'], salary: '$100K–$160K' },
+      { title: 'Product Manager', riasec: ['E','I','C'], salary: '$110K–$170K' },
+      { title: 'Graphic Designer', riasec: ['A'], salary: '$55K–$90K' },
+      { title: 'Psychologist', riasec: ['S','I'], salary: '$70K–$110K' },
+      { title: 'Business Analyst', riasec: ['E','C','I'], salary: '$75K–$120K' },
+      { title: 'Architect', riasec: ['A','R'], salary: '$80K–$130K' },
+      { title: 'Doctor', riasec: ['I','S'], salary: '$150K–$300K' },
+      { title: 'Lawyer', riasec: ['S','E'], salary: '$90K–$180K' },
+      { title: 'Environmental Scientist', riasec: ['R','I'], salary: '$60K–$100K' },
+      { title: 'Marketing Manager', riasec: ['E','S'], salary: '$70K–$120K' },
+      { title: 'Teacher', riasec: ['S','A'], salary: '$45K–$75K' },
+      { title: 'Financial Analyst', riasec: ['C','E','I'], salary: '$80K–$130K' },
+      { title: 'Civil Engineer', riasec: ['R','I','C'], salary: '$75K–$120K' },
+      { title: 'Journalist', riasec: ['A','S','E'], salary: '$50K–$90K' },
+      { title: 'Nurse', riasec: ['S','I'], salary: '$60K–$95K' },
+      { title: 'Film Director', riasec: ['A','E'], salary: '$60K–$120K' },
+      { title: 'Diplomat', riasec: ['S','E'], salary: '$80K–$140K' },
+      { title: 'Agricultural Engineer', riasec: ['R','I'], salary: '$65K–$100K' },
+      { title: 'Marine Engineer', riasec: ['R','I'], salary: '$70K–$120K' },
+      { title: 'Biomedical Researcher', riasec: ['I','R'], salary: '$75K–$130K' },
+      { title: 'Art Director', riasec: ['A','E'], salary: '$70K–$120K' },
+      { title: 'Political Scientist', riasec: ['S','I','E'], salary: '$65K–$110K' },
+    ]
+
+    const matched = careerDatabase
+      .map(career => {
+        const overlap = career.riasec.filter(code =>
+          topTraits.includes(code)
+        ).length
+        const pct = Math.round((overlap / career.riasec.length) * 100)
+        return { ...career, pct }
+      })
+      .filter(c => c.pct > 0)
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 8)
+
+    setCareers(matched)
+    if (matched.length > 0) {
+      setTopMatch(matched[0].title)
+    }
+  }
+
   useEffect(() => {
     if (!user) return
 
-    // Fetch latest assessment
-    const fetchAssessment = async () => {
-      const { data } = await supabase
+    async function loadData() {
+      // Fetch latest assessment
+      const { data: assessData } = await supabase
         .from('assessments')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
-      if (data) setAssessment(data)
-    }
 
-    // Fetch YES university matches
-    const fetchMatches = async () => {
+      if (assessData) {
+        setAssessment(assessData)
+        
+        // Calculate careers based on real traits
+        if (assessData?.top_traits) {
+          calculateCareers(assessData.top_traits)
+        }
+      }
+
+      // Count assessments taken
+      const { count: ac } = await supabase
+        .from('assessments')
+        .select('*', { count: 'exact' })
+        .eq('user_id', user.id)
+      setAssessmentCount(ac || 0)
+
+      // Fetch YES university matches
       const { data } = await supabase
         .from('user_university_choices')
         .select('*, universities(*)')
@@ -75,23 +129,42 @@ function DashboardPage() {
         setMatches(data || [])
         setMatchCount(data?.length || 0)
       }
-    }
 
-    // Fetch shortlist count (final_decision = 'keep')
-    const fetchShortlist = async () => {
-      const { data } = await supabase
+      // Count shortlist (final_decision = 'keep')
+      const { count: sc } = await supabase
         .from('user_university_choices')
-        .select('university_id')
+        .select('*', { count: 'exact' })
         .eq('user_id', user.id)
         .eq('final_decision', 'keep')
-      if (data) {
-        setShortlistCount(data?.length || 0)
+      setShortlistCount(sc || 0)
+
+      // Fetch recommended skills based on assessment
+      if (assessData?.top_traits?.length > 0) {
+        const { data: skillsData } = await supabase
+          .from('skills')
+          .select('id, name, category, description, riasec_tags, skill_universities(university_id)')
+
+        if (skillsData) {
+          const matched = skillsData
+            .filter(s => s.riasec_tags?.some(tag =>
+              assessData.top_traits.includes(tag)
+            ))
+            .map(s => ({
+              ...s,
+              universityCount: s.skill_universities?.length || 0,
+              matchScore: s.riasec_tags?.filter(tag =>
+                assessData.top_traits.includes(tag)
+              ).length || 0
+            }))
+            .sort((a, b) => b.matchScore - a.matchScore)
+            .slice(0, 6)
+
+          setRecommendedSkills(matched)
+        }
       }
     }
 
-    fetchAssessment()
-    fetchMatches()
-    fetchShortlist()
+    loadData()
   }, [user])
 
   function toggleSave(title) {
@@ -154,7 +227,7 @@ function DashboardPage() {
         <div className="welcome-banner">
           <div>
             <h2>Welcome back, Alex 👋</h2>
-            <p>Your top match: <strong>UX Researcher</strong> · Last assessment: March 10, 2026</p>
+            <p>Your top match: <strong>{topMatch || 'Take the assessment'}</strong> · {assessment?.created_at ? `Last assessment: ${new Date(assessment.created_at).toLocaleDateString()}` : 'No assessment yet'}</p>
           </div>
           <button className="btn-retake" onClick={() => navigate('/assessment')}>↺ Retake Assessment</button>
         </div>
@@ -169,7 +242,7 @@ function DashboardPage() {
                   <circle cx="35" cy="35" r="28" fill="none" stroke="var(--teal)" strokeWidth="6" strokeDasharray="175.9" strokeDashoffset="140" strokeLinecap="round"/>
                 </svg>
               </div>
-              <div className="prog-num">2</div>
+              <div className="prog-num">{assessmentCount}</div>
               <div className="prog-label">Assessments Taken</div>
             </div>
             <div className="prog-stat">
@@ -179,7 +252,7 @@ function DashboardPage() {
                   <circle cx="35" cy="35" r="28" fill="none" stroke="var(--teal)" strokeWidth="6" strokeDasharray="175.9" strokeDashoffset="88" strokeLinecap="round"/>
                 </svg>
               </div>
-              <div className="prog-num">12</div>
+              <div className="prog-num">{careers.length}</div>
               <div className="prog-label">Careers Explored</div>
             </div>
             <div className="prog-stat">
@@ -318,7 +391,95 @@ function DashboardPage() {
               ))}
             </div>
           </div>
-
+          {/* Recommended Skills */}
+          {recommendedSkills.length > 0 && (
+            <div className="dash-card" style={{ gridColumn: '1 / -1' }}>
+              <div className="dash-card-title">
+                <span>🎯</span> Skills Matched to Your Profile
+              </div>
+              <p style={{ color:'#6b7280', fontSize:'0.85rem', marginBottom:'1rem' }}>
+                Based on your top traits: <strong>{assessment?.top_traits?.join(', ')}</strong>
+                — click any skill to explore universities
+              </p>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: '0.9rem'
+              }}>
+                {recommendedSkills.map(skill => (
+                  <div key={skill.id}
+                    onClick={() => navigate('/skills')}
+                    style={{
+                      background: '#f9fafb',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 12, padding: '1.1rem',
+                      cursor: 'pointer', transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = '#0d9488'
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = '#e5e7eb'
+                      e.currentTarget.style.transform = 'translateY(0)'
+                    }}
+                  >
+                    <span style={{
+                      fontSize: '0.7rem', fontWeight: 700,
+                      background: '#ccfbf1', color: '#0d9488',
+                      padding: '0.15rem 0.55rem', borderRadius: 50,
+                      display: 'inline-block', marginBottom: '0.5rem'
+                    }}>
+                      {skill.category}
+                    </span>
+                    <div style={{
+                      fontWeight: 700, fontSize: '0.9rem',
+                      marginBottom: '0.3rem', color: '#1a1a2e'
+                    }}>
+                      {skill.name}
+                    </div>
+                    <p style={{
+                      fontSize: '0.77rem', color: '#6b7280',
+                      marginBottom: '0.6rem', lineHeight: 1.4,
+                      display: '-webkit-box', WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                    }}>
+                      {skill.description}
+                    </p>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{
+                        fontSize: '0.74rem', color: '#0d9488', fontWeight: 600
+                      }}>
+                        🏛️ {skill.universityCount} universities
+                      </span>
+                      <span style={{
+                        fontSize: '0.74rem', color: '#0d9488', fontWeight: 600
+                      }}>
+                        Explore →
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                <button
+                  onClick={() => navigate('/skills')}
+                  style={{
+                    background: 'none', border: '2px solid #0d9488',
+                    color: '#0d9488', padding: '0.5rem 1.4rem',
+                    borderRadius: 50, fontWeight: 600, cursor: 'pointer',
+                    fontFamily: 'DM Sans, sans-serif', fontSize: '0.88rem'
+                  }}
+                >
+                  Browse All Skills →
+                </button>
+              </div>
+            </div>
+          )}
           {/* Q&A Board */}
           <div className="dash-card qa-card">
             <div className="dash-card-title"><span>💬</span> Community Q&A Board</div>
