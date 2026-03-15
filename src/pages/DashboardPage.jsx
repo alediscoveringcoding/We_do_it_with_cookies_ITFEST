@@ -244,14 +244,23 @@ function DashboardPage() {
   }
 
   const deleteQuestion = async (itemId) => {
-    const { error } = await supabase
-      .from('questions')
-      .delete()
-      .eq('id', itemId)
-      .eq('user_id', user.id)
+    try {
+      const { error } = await supabase
+        .from('questions')
+        .delete()
+        .eq('id', itemId)
+        .eq('user_id', user.id)
 
-    if (!error) {
+      if (error) {
+        console.error('Delete error:', error)
+        return
+      }
+
+      // Only remove from UI if Supabase delete succeeded
       setQAItems(prev => prev.filter(q => q.id !== itemId))
+
+    } catch (err) {
+      console.error('Unexpected error:', err)
     }
   }
 
