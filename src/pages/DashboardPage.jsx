@@ -79,6 +79,7 @@ function DashboardPage() {
       if (data) {
         setQAItems(data.map(q => ({
           id: q.id,
+          dbId: q.id,
           name: q.user_id === user.id ? 'You' : 'Student',
           avatar: q.user_id === user.id ? '👤' : '🧑‍🎓',
           question: q.question,
@@ -90,8 +91,7 @@ function DashboardPage() {
             month: 'short', day: 'numeric'
           }),
           isMine: q.user_id === user.id,
-          loadingAI: false,
-          dbId: q.id
+          loadingAI: false
         })))
       }
       setQALoading(false)
@@ -244,23 +244,20 @@ function DashboardPage() {
   }
 
   const deleteQuestion = async (itemId) => {
-    try {
-      const { error } = await supabase
-        .from('questions')
-        .delete()
-        .eq('id', itemId)
-        .eq('user_id', user.id)
+    console.log('Deleting item with id:', itemId)
+    console.log('Current user id:', user.id)
+    
+    const { data, error } = await supabase
+      .from('questions')
+      .delete()
+      .eq('id', itemId)
+      .eq('user_id', user.id)
+      .select()
 
-      if (error) {
-        console.error('Delete error:', error)
-        return
-      }
+    console.log('Delete result - data:', data, 'error:', error)
 
-      // Only remove from UI if Supabase delete succeeded
+    if (!error) {
       setQAItems(prev => prev.filter(q => q.id !== itemId))
-
-    } catch (err) {
-      console.error('Unexpected error:', err)
     }
   }
 
